@@ -1,0 +1,31 @@
+// ── GRUPO 1: Machine Learning ──────────────────────────────────────
+
+/// ai.config(epocas, tasa, alpha) → [epocas, tasa, alpha]
+ai_config(epocas, tasa, alpha) => [epocas, tasa, alpha]
+
+/// ml.ajustar(X, y, cfg) → Result<[pesos, bias, historial]>
+/// X: lista plana de x, NO hace falta agregar columna de 1s.
+ml_ajustar(X, y, cfg) => prim_ml_ajustar_lineal(X, y, cfg)
+
+/// ml.predecir(modelo, x) → Decimal
+/// x: valor escalar o lista [x1, x2, ...]
+ml_predecir(modelo, x) =>
+    val w = modelo[0]
+    val b = modelo[1]
+    if long(w) == 1:
+        return b + w[0] * x[0]
+    end
+    var suma = b
+    var i = 0
+    while i < long(w):
+        suma = suma + w[i] * x[i]
+        i = i + 1
+    end
+    return suma
+end
+
+/// ml.historial(modelo) → [Decimal]
+ml_historial(modelo) => modelo[2]
+
+/// ml.r2(y_real, y_pred) → Decimal
+ml_r2(y_real, y_pred) => prim_ml_r2(y_real, y_pred)
