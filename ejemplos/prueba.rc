@@ -1,0 +1,820 @@
+// ════════════════════════════════════════════════════════════
+//  prueba_gramatica.rc
+//  Programa de prueba exhaustivo del lenguaje RISCO.
+//  Cada sección ejercita una regla distinta de la gramática.
+// ════════════════════════════════════════════════════════════
+
+
+// ── 1. LITERALES ─────────────────────────────────────────────
+// Prueba: NUMERO, DECIMAL, STRING, BOOLEANO, NULL, lista
+
+print("=== 1. LITERALES ===")
+
+val entero = 42
+val numero_decimal = 3.14
+val cadena_texto = "hola RISCO"
+val bandera = true
+val nada = null
+val lista_mixta = [1, 2.5, "tres", true]
+
+print(entero)
+print(numero_decimal)
+print(cadena_texto)
+print(bandera)
+print(nada)
+print(lista_mixta)
+
+
+// ── 2. VARIABLES val Y var ────────────────────────────────────
+// Prueba: declaracion_variable, asignacion
+
+print("=== 2. VARIABLES ===")
+
+val constante = 100
+var contador = 0
+contador = contador + 1
+contador = contador + 1
+contador = contador + 1
+print(constante)
+print(contador)
+
+
+// ── 3. ARITMÉTICA Y PRECEDENCIA ──────────────────────────────
+// Prueba: suma, termino, potencia, primario unario, paréntesis
+
+print("=== 3. ARITMETICA ===")
+
+val a = 2 + 3 * 4
+val b = (2 + 3) * 4
+val c = 2 ^ 3 ^ 2
+val d = -10 + 4
+val e = 17 % 5
+val f = 10 / 4
+
+print(a)
+print(b)
+print(c)
+print(d)
+print(e)
+print(f)
+
+
+// ── 4. OPERADORES RELACIONALES Y LÓGICOS ─────────────────────
+// Prueba: relacional, igualdad, and_logico, or_logico, !
+
+print("=== 4. LOGICA ===")
+
+val mayor = 5 > 3
+val menor_igual = 4 <= 4
+val igual = "risco" == "risco"
+val distinto = 1 != 2
+val y_logico = true && mayor
+val o_logico = false || distinto
+val negado = !false
+
+print(mayor)
+print(menor_igual)
+print(igual)
+print(distinto)
+print(y_logico)
+print(o_logico)
+print(negado)
+
+
+// ── 5. OPERADOR in ────────────────────────────────────────────
+// Prueba: comparacion con 'in'
+
+print("=== 5. PERTENENCIA ===")
+
+val colores = ["rojo", "verde", "azul"]
+val hay_rojo = "rojo" in colores
+val hay_negro = "negro" in colores
+val hay_tres = 3 in [1, 2, 3, 4]
+
+print(hay_rojo)
+print(hay_negro)
+print(hay_tres)
+
+
+// ── 6. CONCATENACION DE STRINGS Y LISTAS ─────────────────────
+// Prueba: suma con str+str y list+list
+
+print("=== 6. CONCATENACION ===")
+
+val saludo = "Hola" + ", " + "mundo"
+val combinada = [1, 2] + [3, 4] + [5]
+
+print(saludo)
+print(combinada)
+
+
+// ── 7. INDEXACION ────────────────────────────────────────────
+// Prueba: acceso con lista[i] e índices negativos
+
+print("=== 7. INDEXACION ===")
+
+val frutas = ["manzana", "pera", "uva", "mango"]
+print(frutas[0])
+print(frutas[2])
+print(frutas[3])
+
+val matriz = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+print(matriz[0][0])
+print(matriz[1][1])
+print(matriz[2][2])
+
+
+// ── 8. IF / ELIF / ELSE ───────────────────────────────────────
+// Prueba: if_stmt con todas sus ramas
+
+print("=== 8. CONDICIONALES ===")
+
+var temperatura = 35
+
+if temperatura > 30:
+    print("hace calor")
+elif temperatura > 20:
+    print("temperatura agradable")
+elif temperatura > 10:
+    print("hace frio")
+else:
+    print("hace mucho frio")
+end
+
+// if sin else
+val x = 7
+if x % 2 == 0:
+    print("par")
+end
+
+// if anidado
+if x > 0:
+    if x > 5:
+        print("positivo y mayor que 5")
+    else:
+        print("positivo y menor o igual a 5")
+    end
+end
+
+
+// ── 9. WHILE ─────────────────────────────────────────────────
+// Prueba: while_stmt
+
+print("=== 9. WHILE ===")
+
+var i = 1
+var suma = 0
+while i <= 10:
+    suma = suma + i
+    i = i + 1
+end
+print(suma)
+
+// Contar hacia atrás
+var cuenta = 5
+while cuenta > 0:
+    print(cuenta)
+    cuenta = cuenta - 1
+end
+
+
+// ── 10. FOR ──────────────────────────────────────────────────
+// Prueba: for_stmt sobre lista y sobre string
+
+print("=== 10. FOR ===")
+
+val numeros = [10, 20, 30, 40, 50]
+var acumulado = 0
+for n in numeros:
+    acumulado = acumulado + n
+end
+print(acumulado)
+
+// For sobre string
+val palabra = "RISCO"
+for letra in palabra:
+    print(letra)
+end
+
+// For anidado
+val filas = [1, 2, 3]
+val cols = [1, 2, 3]
+for fila in filas:
+    for col in cols:
+        if fila == col:
+            print(fila)
+        end
+    end
+end
+
+
+// ── 11. FUNCIONES CORTAS ─────────────────────────────────────
+// Prueba: declaracion_funcion de una sola línea
+// ¡IMPORTANTE: Estas funciones deben definirse ANTES de ser usadas!
+
+print("=== 11. FUNCIONES CORTAS ===")
+
+doble(x) => x * 2
+cuadrado(x) => x ^ 2
+sumar(x, y) => x + y
+es_par(n) => n % 2 == 0
+identidad(v) => v
+
+print(doble(7))
+print(cuadrado(5))
+print(sumar(3, 4))
+print(es_par(8))
+print(es_par(9))
+print(identidad("sin cambios"))
+
+
+// ── 12. FUNCIONES FORMA LARGA CON RETURN ─────────────────────
+// Prueba: declaracion_funcion multilínea y return_stmt
+
+print("=== 12. FUNCIONES LARGAS ===")
+
+maximo(a, b) =>
+    if a >= b:
+        return a
+    end
+    return b
+end
+
+factorial(n) =>
+    if n <= 1:
+        return 1
+    end
+    return n * factorial(n - 1)
+end
+
+clasificar(nota) =>
+    if nota >= 90:
+        return "Excelente"
+    elif nota >= 70:
+        return "Aprobado"
+    elif nota >= 50:
+        return "Regular"
+    else:
+        return "Reprobado"
+    end
+end
+
+print(maximo(8, 13))
+print(maximo(20, 7))
+print(factorial(5))
+print(factorial(10))
+print(clasificar(95))
+print(clasificar(72))
+print(clasificar(55))
+print(clasificar(40))
+
+
+// ── 13. BUILT-IN: long ───────────────────────────────────────
+// Prueba: llamada_funcion al built-in long()
+
+print("=== 13. BUILTIN long ===")
+
+val datos = [4, 8, 15, 16, 23, 42]
+print(long(datos))
+print(long([]))
+print(long("hola"))
+
+
+// ── 14. BUILT-IN: range ──────────────────────────────────────
+// Prueba: llamada_funcion al built-in range()
+
+print("=== 14. BUILTIN range ===")
+
+val secuencia = range(0, 5)
+print(secuencia)
+print(long(range(1, 11)))
+
+
+// ── 15. BUILT-IN: map ────────────────────────────────────────
+// Prueba: map con función nombrada y con lambda
+
+print("=== 15. BUILTIN map ===")
+
+val valores = [1, 2, 3, 4, 5]
+val dobles = map(valores, (x) => x * 2)
+val cuadrados = map(valores, (x) => x ^ 2)
+val textos = map(range(1, 4), (n) => texto(n))
+
+print(dobles)
+print(cuadrados)
+print(textos)
+
+// map con función nombrada
+val triples = map(valores, doble)
+print(triples)
+
+
+// ── 16. BUILT-IN: filter ─────────────────────────────────────
+// Prueba: filter con lambda y con función nombrada
+
+print("=== 16. BUILTIN filter ===")
+
+val todos = range(1, 11)
+val pares = filter(todos, (n) => n % 2 == 0)
+val impares = filter(todos, (n) => n % 2 != 0)
+val mayores = filter(datos, (v) => v > 15)
+
+print(pares)
+print(impares)
+print(mayores)
+
+// filter con función nombrada
+val pares2 = filter(range(1, 11), es_par)
+print(pares2)
+
+
+// ── 17. BUILT-IN: reduce ─────────────────────────────────────
+// Prueba: reduce para suma, producto y máximo
+
+print("=== 17. BUILTIN reduce ===")
+
+val lista_r = [1, 2, 3, 4, 5]
+val suma_r = reduce(lista_r, (a, b) => a + b)
+val producto = reduce(lista_r, (a, b) => a * b)
+
+print(suma_r)
+print(producto)
+
+
+// ── 18. COMBINACIÓN map + filter + reduce ────────────────────
+// Prueba: cadena de built-ins (pipeline manual)
+
+print("=== 18. PIPELINE MANUAL ===")
+
+// Suma de cuadrados de los números pares del 1 al 10
+val base = range(1, 11)
+val solo_pares = filter(base, (n) => n % 2 == 0)
+val cuadrados_pares = map(solo_pares, (n) => n ^ 2)
+val suma_cuadrados = reduce(cuadrados_pares, (a, b) => a + b)
+print(suma_cuadrados)
+
+
+// ── 19. CASTEO EXPLÍCITO ─────────────────────────────────────
+// Prueba: casteo con num(), decimal(), texto(), bool()
+
+print("=== 19. CASTEO ===")
+
+val como_entero = num(3.99)
+val como_decimal = decimal(7)
+val como_texto_n = texto(42)
+val como_texto_d = texto(3.14)
+val como_texto_b = texto(true)
+val verdadero = bool(1)
+val falso = bool(0)
+val de_string = num("25")
+
+print(como_entero)
+print(como_decimal)
+print(como_texto_n)
+print(como_texto_d)
+print(como_texto_b)
+print(verdadero)
+print(falso)
+print(de_string)
+
+
+// ── 20. COMENTARIOS ──────────────────────────────────────────
+// Prueba: COMENTARIO_LINEA, COMENTARIO_BLOQUE, COMENTARIO_DOC
+
+/-
+    Este bloque completo es un comentario.
+    El lexer lo ignora por completo.
+    Puede tener múltiples líneas.
+-/
+
+/// Esto es un comentario de documentación — también ignorado
+
+val ignorado = 0 // este comentario no afecta la expresión
+
+print("=== 20. COMENTARIOS === (llegaste hasta aqui, todo funciono)")
+
+
+// ── 21. FUNCIONES COMO VALORES (orden superior) ──────────────
+// Prueba: pasar función nombrada como argumento
+
+print("=== 21. FUNCIONES DE ORDEN SUPERIOR ===")
+
+aplicar(f, valor) => f(valor)
+
+print(aplicar(doble, 5))
+print(aplicar(cuadrado, 4))
+print(aplicar((x) => x + 100, 7))
+
+
+// ── 22. CLOSURES Y SCOPE ─────────────────────────────────────
+// Prueba: función que captura variable del entorno
+
+print("=== 22. CLOSURES ===")
+
+val base_suma = 1000
+
+agregar_base(n) => n + base_suma
+
+print(agregar_base(5))
+print(agregar_base(200))
+
+
+// ── 23. RECURSIÓN ────────────────────────────────────────────
+// Prueba: función recursiva sin guards
+
+print("=== 23. RECURSION ===")
+
+fibonacci(n) =>
+    if n <= 0:
+        return 0
+    end
+    if n == 1:
+        return 1
+    end
+    return fibonacci(n - 1) + fibonacci(n - 2)
+end
+
+print(fibonacci(0))
+print(fibonacci(1))
+print(fibonacci(6))
+print(fibonacci(10))
+
+
+// ── 24. LISTAS ANIDADAS ──────────────────────────────────────
+// Prueba: lista de listas, indexación doble
+
+print("=== 24. LISTAS ANIDADAS ===")
+
+val tabla = [[10, 20, 30], [40, 50, 60], [70, 80, 90]]
+
+print(tabla[0])
+print(tabla[1][2])
+print(tabla[2][0])
+
+// Recorrer con for anidado
+var suma_tabla = 0
+for fila2 in tabla:
+    for celda in fila2:
+        suma_tabla = suma_tabla + celda
+    end
+end
+print(suma_tabla)
+
+
+// ── 25. EXPRESIONES COMPLEJAS ────────────────────────────────
+// Prueba: combinación de todos los niveles de precedencia
+
+print("=== 25. EXPRESIONES COMPLEJAS ===")
+
+val r1 = 2 + 3 * 4 ^ 2 - 1
+val r2 = (10 - 3) * (2 + 1) ^ 2
+val r3 = !false && 3 > 2 || 1 == 0
+val r4 = long([1, 2, 3]) * 2 + num(decimal(4))
+
+print(r1)
+print(r2)
+print(r3)
+print(r4)
+
+// ════════════════════════════════════════════════════════════
+//  SECCIÓN 26 — input() + estadísticas con mat
+//
+//  El usuario ingresa cuántos valores quiere analizar.
+//  Se genera un vector de N decimales pseudoaleatorios
+//  con el LCG (mat_seed + mat_random) escalados a [0.0, 100.0).
+//  Luego se aplica todo el grupo de funciones estadísticas
+//  y escalares de mat sobre ese vector.
+// ════════════════════════════════════════════════════════════
+
+print("=== 26. INPUT + ESTADÍSTICAS CON MAT ===")
+
+// ── 26.1 Leer cantidad de valores desde consola ───────────────
+val n_vals = num(input("¿Cuántos valores quieres generar? (ej: 8): "))
+
+// ── 26.2 Generar vector pseudoaleatorio en [0.0, 100.0) ───────
+// mat_seed fija la semilla para reproducibilidad
+mat.seed(7)
+
+// mat_random genera una matriz 1×n; tomamos la primera fila
+val rnd_mat = mat.random(1, n_vals)
+val v_base  = rnd_mat[0]
+
+// Escalar a [0.0, 100.0)
+val v_esc = mat.scale(100.0, v_base)
+
+print("Vector generado (escala 0-100):")
+print(v_esc)
+print("Cantidad de elementos:")
+print(long(v_esc))
+
+// ── 26.3 Grupo 2 — Estadística ────────────────────────────────
+
+val v_suma   = mat.sum(v_esc)
+val v_media  = mat.mean(v_esc)
+val v_minimo = mat.min(v_esc)
+val v_maximo = mat.max(v_esc)
+val v_desv   = mat.std(v_esc)
+
+print("Suma:")
+print(v_suma)
+print("Media:")
+print(v_media)
+print("Mínimo:")
+print(v_minimo)
+print("Máximo:")
+print(v_maximo)
+print("Desviación std:")
+print(v_desv)
+
+// ── 26.4 Grupo 1 — Escalares sobre la media ───────────────────
+
+// mat_abs: valor absoluto (útil si la media fuera negativa)
+val v_abs_media = mat.abs(v_media)
+print("abs(media):")
+print(v_abs_media)
+
+// mat_floor y mat.ceil sobre la media
+val v_piso  = mat.floor(v_media)
+val v_techo = mat.ceil(v_media)
+print("floor(media):")
+print(v_piso)
+print("ceil(media):")
+print(v_techo)
+
+// mat_pow: media al cuadrado
+val v_media2 = mat.pow(v_media, 2.0)
+print("media^2:")
+print(v_media2)
+
+// mat_sqrt: raíz de la suma → devuelve Result, usar unwrap
+val v_raiz = unwrap(mat.sqrt(v_suma), 0.0)
+print("sqrt(suma):")
+print(v_raiz)
+
+// mat_exp: e^(media/100) para mantener valor manejable
+val v_exp = mat.exp(v_media / 100.0)
+print("exp(media/100):")
+print(v_exp)
+
+// mat_log: logaritmo natural de la media (solo si media > 0)
+val v_log = unwrap(mat.log(v_media), 0.0)
+print("log(media):")
+print(v_log)
+
+// ── 26.5 Grupo 3 — Operaciones vectoriales ────────────────────
+
+// mat_norm: norma euclidiana del vector
+val v_norma = mat.norm(v_esc)
+print("Norma euclidiana:")
+print(v_norma)
+
+// mat_scale: normalizar a [0.0, 1.0)
+val v_norm01 = mat.scale(0.01, v_esc)
+print("Vector normalizado [0,1):")
+print(v_norm01)
+
+// mat_vadd: sumar el vector consigo mismo
+val v_doble = mat.vadd(v_esc, v_esc)
+print("Vector duplicado (vadd):")
+print(v_doble)
+
+// mat_dot: producto punto del vector normalizado consigo mismo
+// equivale a norma^2 / 10000
+val v_dot = mat.dot(v_norm01, v_norm01)
+print("dot(v_norm, v_norm):")
+print(v_dot)
+
+// Verificación: debe ser ≈ (norma/100)^2
+val v_verif = mat.pow(v_norma / 100.0, 2.0)
+print("Verificación (norma/100)^2:")
+print(v_verif)
+
+
+// ════════════════════════════════════════════════════════════
+//  SECCIÓN 27 — Operaciones matriciales completas con mat
+//
+//  Demostración de todos los grupos 4, 5 y 6 de mat.
+//  Variables prefijadas con m_ para evitar colisiones.
+// ════════════════════════════════════════════════════════════
+
+print("=== 27. OPERACIONES MATRICIALES CON MAT ===")
+
+// ── 27.1 Grupo 5 — Generación de matrices ────────────────────
+
+print("--- 27.1 Generacion de matrices ---")
+
+val m_Z = mat.zeros(3, 4)
+print("mat.zeros(3,4):")
+print(m_Z)
+
+val m_U = mat.ones(2, 3)
+print("mat.ones(2,3):")
+print(m_U)
+
+val m_I3 = mat.identity(3)
+print("mat.identity(3):")
+print(m_I3)
+
+val m_plana = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+val m_M23   = mat.fromList(m_plana, 2, 3)
+print("mat.fromList([1..6], 2, 3):")
+print(m_M23)
+
+// fromList con tamaño incorrecto → None
+val m_Merr = mat.fromList([1.0, 2.0], 2, 3)
+print("mat.fromList mal dimensionada (None):")
+print(m_Merr)
+
+mat_seed(42)
+val m_R = mat.random(3, 3)
+print("mat.random(3,3) semilla=42:")
+print(m_R)
+
+// ── 27.2 Grupo 4 — Inspección de matrices ────────────────────
+
+print("--- 27.2 Inspeccion de matrices ---")
+
+val m_A = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]
+val m_B = [[7.0, 8.0, 9.0], [10.0, 11.0, 12.0]]
+
+// mat_shape
+val m_forma = mat.shape(m_A)
+print("shape(A) → [2, 3]:")
+print(m_forma)
+
+// mat_T: transpuesta de A → 3×2
+val m_AT = mat.T(m_A)
+print("T(A):")
+print(m_AT)
+print("shape(T(A)) → [3, 2]:")
+print(mat.shape(m_AT))
+
+// mat_get: elemento en fila 1, col 2 → 6.0
+val m_elem = mat.get(m_A, 1, 2)
+print("get(A, 1, 2) = 6.0:")
+print(m_elem)
+
+// mat_get fuera de rango → None
+val m_elem_err = mat.get(m_A, 5, 0)
+print("get(A, 5, 0) fuera de rango (None):")
+print(m_elem_err)
+
+// mat_row: fila 0 de A → [1, 2, 3]
+val m_fila0 = mat.row(m_A, 0)
+print("row(A, 0) = [1, 2, 3]:")
+print(m_fila0)
+
+// mat_col: columna 1 de A → [2, 5]
+val m_col1 = mat.col(m_A, 1)
+print("col(A, 1) = [2, 5]:")
+print(m_col1)
+
+// ── 27.3 Grupo 4 — Operaciones entre matrices ────────────────
+
+print("--- 27.3 Operaciones entre matrices ---")
+
+// mat_madd: A + B elemento a elemento
+val m_AB = mat.madd(m_A, m_B)
+print("madd(A, B):")
+print(m_AB)
+
+// mat_madd con forma distinta → None
+val m_C1    = [[1.0, 2.0], [3.0, 4.0]]
+val m_add_e = mat.madd(m_A, m_C1)
+print("madd(A, C1) forma distinta (None):")
+print(m_add_e)
+
+// mat_mscale: A * 2.0
+val m_A2 = mat.mscale(2.0, m_A)
+print("mscale(2.0, A):")
+print(m_A2)
+
+// mat_mul: A(2×3) × AT(3×2) → 2×2
+// prim_mat_matmul devuelve lista directa (no Result)
+val m_C = unwrap(mat.mul(m_A, m_AT),null)
+print("mul(A, T(A)) = A×AT [2×2]:")
+print(m_C)
+
+// mat_mul con dimensiones incompatibles → error
+// m_A es 2×3, m_C1 es 2×2 → cols(A)=3 != filas(C1)=2 → None
+val m_mul_e = mat.mul(m_A, m_C1)
+print("mul(A, C1) incompatible (debe ser err):")
+print(m_mul_e)
+
+// ── 27.4 Grupo 6 — Operaciones optimizadas deep learning ─────
+
+print("--- 27.4 Operaciones deep learning ---")
+
+// Escenario: capa densa 2 entradas → 3 neuronas
+// X: 2 muestras × 2 features
+val m_X = [[1.0, 0.5], [0.3, 0.8]]
+
+// W: pesos 2 features × 3 neuronas
+val m_W = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+
+// b: bias 3 neuronas
+val m_b = [0.01, 0.02, 0.03]
+
+// mat_mulAdd: X(2×2) × W(2×3) + b(3) → 2×3
+// prim_mat_matmulAdd devuelve lista directa (no Result)
+// unwrap recibe 2 argumentos: resultado y fallback
+val m_pre = unwrap(mat.mulAdd(m_X, m_W, m_b),null)
+print("mulAdd(X, W, b) = pre-activaciones [2×3]:")
+print(m_pre)
+
+// mat_apply: aplicar ReLU elemento a elemento
+relu(v) =>
+    if v > 0.0:
+        return v
+    end
+    return 0.0
+end
+
+val m_act = mat.apply(relu, m_pre)
+print("apply(relu, pre):")
+print(m_act)
+
+// mat_mulT: A × A^T sin construir la transpuesta
+// A es 2×3; mulT(A, A) calcula A × A^T → 2×2
+// prim_mat_matmulT devuelve lista directa (no Result)
+val m_mulT = unwrap(mat.mulT(m_A, m_A), null)
+print("mulT(A, A) = A×A^T [2×2]:")
+print(m_mulT)
+
+// Verificación: debe coincidir con mat_mul(A, T(A))
+// mat_mul devuelve lista directa (no Result)
+val m_verif = unwrap(mat.mul(m_A, mat_T(m_A)), null)
+print("Verificacion mul(A, T(A)) [debe coincidir]:")
+print(m_verif)
+
+// mat_mulAdd con dimensiones incorrectas → error
+// m_X es 2×2, m_I3 es 3×3 → cols(X)=2 != filas(I3)=3 → None
+val m_mulAdd_e = mat.mulAdd(m_X, m_I3, m_b)
+print("mulAdd dimensiones incorrectas (debe ser err):")
+print(m_mulAdd_e)
+
+// ── 27.5 Pipeline completo: generar → transformar → analizar ──
+
+print("--- 27.5 Pipeline completo ---")
+
+mat_seed(99)
+val m_M44 = mat.random(4, 4)
+print("Matriz 4×4 aleatoria (semilla 99):")
+print(m_M44)
+
+// Escalar a [-1.0, 1.0): x*2 - 1
+val m_M44c   = mat.mscale(2.0, m_M44)
+val m_unos44 = mat.ones(4, 4)
+val m_M44n   = mat.madd(m_M44c, mat.mscale(-1.0, m_unos44))
+print("Matriz centrada en [-1, 1):")
+print(m_M44n)
+
+// Aplicar sigmoid: 1 / (1 + e^(-x))
+sigmoid(v) => 1.0 / (1.0 + mat.exp(0.0 - v))
+
+val m_M44s = mat.apply(sigmoid, m_M44n)
+print("Tras aplicar sigmoid:")
+print(m_M44s)
+
+// Extraer fila 0 y calcular su norma
+val m_f0    = mat.row(m_M44s, 0)
+val m_norma = mat.norm(m_f0)
+print("Fila 0 tras sigmoid:")
+print(m_f0)
+print("Norma fila 0:")
+print(m_norma)
+
+// Suma por fila usando mat_sum + mat_row
+val m_sf0 = mat.sum(mat.row(m_M44s, 0))
+val m_sf1 = mat.sum(mat.row(m_M44s, 1))
+val m_sf2 = mat.sum(mat.row(m_M44s, 2))
+val m_sf3 = mat.sum(mat.row(m_M44s, 3))
+val m_sumas = [m_sf0, m_sf1, m_sf2, m_sf3]
+print("Suma por fila:")
+print(m_sumas)
+print("Media de sumas:")
+print(mat.mean(m_sumas))
+
+// ── 27.6 Componente Trigonométrico──
+print("--- 27.6 Componente Trigonométrico ---")
+print(mat.sin(0.0))                       
+print(mat.cos(0.0))             
+print(mat.tan(0.0))  
+print(mat.sin(PI))                  
+print(mat.cos(PI))           
+print(mat.tan(PI))                       
+print(mat.sin(PI / 2.0))     
+print(mat.cos(PI/2.0))
+print(mat.tan(PI / 2.0))               
+print(mat.sin(PI/3.0))
+print(mat.cos(PI/3.0))
+print(mat.tan(PI/3.0))
+print(mat.sin(PI/4.0))
+print(mat.cos(PI/4.0))
+print(mat.tan(PI / 4.0))             
+print(mat.sin(PI/6.0))
+print(mat.cos(PI/6.0))
+print(mat.tan(PI/6.0))
+
+
+print("=== FIN DE PRUEBAS ===")

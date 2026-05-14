@@ -1,0 +1,61 @@
+print("--- INICIANDO TEST COMPLETO DE ARCHIVOS ---")
+
+val archivo = "datos_v2.txt"
+
+print("Paso 1: escribir contenido inicial")
+file_writePath(archivo, "Linea 1: Datos guardados por Risco\nLinea 2: El motor de archivos es persistente")
+print("OK: escritura inicial completada")
+
+print("---")
+
+print("Paso 2: verificar existencia")
+print(file_exists(archivo))
+
+print("---")
+
+print("Paso 3: leer archivo completo")
+val contenido = file_readPath(archivo)
+print(contenido)
+
+print("---")
+
+print("Paso 4: leer líneas")
+val lineas = file_readLinesPath(archivo)
+print(lineas)
+
+print("---")
+
+print("Paso 5: agregar una línea")
+file_appendLine(archivo, "Linea 3: append funcionando")
+val contenido2 = file_readPath(archivo)
+print(contenido2)
+
+print("---")
+
+print("Paso 6: escribir varias líneas nuevas")
+val nuevas = ["Uno", "Dos", "Tres"]
+file_writeLines(archivo, nuevas)
+val lineas2 = file_readLinesPath(archivo)
+print(lineas2)
+
+print("---")
+
+print("Paso 7: leer CSV básico")
+val csv = "a,b,c\n1,2,3\nx,y,z"
+file_writePath("datos_csv.csv", csv)
+val tabla = file_readCSV("datos_csv.csv")
+print(tabla)
+
+print("---")
+
+print("Paso 8: borrar archivos")
+print(file_delete(archivo))
+print(file_delete("datos_csv.csv"))
+//modificar para que no se borre
+print("---")
+
+print("Paso 9: verificar borrado")
+print(file_exists(archivo))
+print(file_exists("datos_csv.csv"))
+
+print("--- TEST FINALIZADO CON EXITO ---")

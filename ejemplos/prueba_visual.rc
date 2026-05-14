@@ -1,0 +1,15 @@
+print("Generando gráficos SVG configurables...")
+
+visual_bar(["Modelo A","Modelo B","Modelo C"], [78,92,85], "Precision por modelo", "Modelos", "Precision", "bar.svg")
+
+visual_line([100,80,65,50,40,32,28], "Perdida por epoca", "Epoca", "Perdida", "line.svg")
+
+visual_scatter([1,2,3,4,5], [2,5,3,7,6], "Relacion entre X e Y", "Variable X", "Variable Y", "scatter.svg")
+
+visual_hist([4,7,10,8,12], "Histograma de frecuencias", "Bins", "Frecuencia", "hist.svg")
+
+visual_bar_cfg(["A","B","C","D"], [10,25,18,30], "Grafico personalizado", "Categoria", "Valor", 1000, 600, "#000000", "#f59e0b", "#ffffff", "#ffffff", "#444444", "bar_custom.svg")
+
+visual_line_cfg([30,28,25,20,18,15], "Loss personalizada", "Epoca", "Loss", 1000, 600, "#0f172a", "#38bdf8", "#ffffff", "#ffffff", "#334155", "line_custom.svg")
+
+print("Listo. Abre los archivos SVG generados.")

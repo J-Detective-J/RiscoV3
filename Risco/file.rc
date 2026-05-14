@@ -1,0 +1,148 @@
+// ════════════════════════════════════════════════════════════════
+//  risco/file.rc  —  Librería risco.file
+//
+//  Primitivas del intérprete:
+//    prim_file_*
+//
+//  Diseño:
+//    - file_open devuelve handle o null si falla
+//    - file_read devuelve String o null
+//    - file_write devuelve null
+//    - file_close devuelve null
+//    - Se mantiene consistencia con mat.rc (uso de null para errores)
+// ════════════════════════════════════════════════════════════════
+
+
+// ── GRUPO 1: Apertura / cierre ──────────────────────────────────
+
+/// file.open(path, mode) → File | null
+/// mode: "r" (read), "w" (write), "a" (append)
+file_open(path, mode) => prim_file_open(path, mode)
+
+/// file.close(f) → null
+file_close(f) => prim_file_close(f)
+
+
+// ── GRUPO 2: Lectura ────────────────────────────────────────────
+
+/// file.read(f) → String | null
+/// Lee todo el contenido del archivo
+file_read(f) => prim_file_read(f)
+
+/// file.readLine(f) → String | null
+/// Lee una línea del archivo
+file_readLine(f) => prim_file_readLine(f)
+
+
+/// file.readLines(f) → [String] | null
+/// Lee todas las líneas
+file_readLines(f) =>
+    val txt = file_read(f)
+    if txt == null:
+        return null
+    end
+    return split(txt, "\n")
+end
+
+
+// ── GRUPO 3: Escritura ──────────────────────────────────────────
+
+/// file.write(f, data) → null
+/// Sobrescribe o escribe en archivo abierto
+file_write(f, data) => prim_file_write(f, data)
+
+/// file.writeLine(f, data) → null
+file_writeLine(f, data) =>
+    return file_write(f, data + "\n")
+end
+
+
+// ── GRUPO 4: Utilidades ─────────────────────────────────────────
+
+/// file.exists(path) → Bool
+file_exists(path) => prim_file_exists(path)
+
+/// file.delete(path) → Bool
+file_delete(path) => prim_file_delete(path)
+
+// ── GRUPO 5: Alto nivel ────────────────────────────────────────
+
+/// file.readPath(path) → String | null
+/// Abre un archivo por ruta, lee todo su contenido y lo cierra.
+file_readPath(path) =>
+    val f = file_open(path, "r")
+    if f == null:
+        return null
+    end
+    val txt = file_read(f)
+    file_close(f)
+    return txt
+end
+
+/// file.writePath(path, data) → null
+/// Abre un archivo por ruta en modo escritura, escribe y cierra.
+file_writePath(path, data) =>
+    val f = file_open(path, "w")
+    if f == null:
+        return null
+    end
+    file_write(f, data)
+    file_close(f)
+    return null
+end
+
+/// file.appendPath(path, data) → null
+/// Abre un archivo por ruta en modo append, escribe al final y cierra.
+file_appendPath(path, data) =>
+    val f = file_open(path, "a")
+    if f == null:
+        return null
+    end
+    file_write(f, data)
+    file_close(f)
+    return null
+end
+
+/// file.readLinesPath(path) → [String] | null
+/// Lee un archivo completo por ruta y devuelve sus líneas.
+file_readLinesPath(path) =>
+    val txt = file_readPath(path)
+    if txt == null:
+        return null
+    end
+    val partes = split(txt, "\n")
+    if long(partes) > 0 && partes[long(partes) - 1] == "":  
+        return filter(partes, (x) => x != "")
+    end
+    return partes
+end
+
+/// file.writeLines(path, lines) → null
+/// Escribe una lista de líneas en un archivo, una por renglón.
+file_writeLines(path, lines) =>
+    val f = file_open(path, "w")
+    if f == null:
+        return null
+    end
+    for line in lines:
+        file_write(f, line + "\n")
+    end
+    file_close(f)
+    return null
+end
+
+/// file.appendLine(path, data) → null
+/// Agrega una línea al final de un archivo.
+file_appendLine(path, data) =>
+    return file_appendPath(path, data + "\n")
+end
+
+/// file.readCSV(path) → [[String]] | null
+/// Lee un CSV básico separado por comas.
+file_readCSV(path) =>
+    val lines = file_readLinesPath(path)
+    if lines == null:
+        return null
+    end
+    return map(lines, (line) => split(line, ","))
+end
