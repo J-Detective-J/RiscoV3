@@ -1,0 +1,415 @@
+// ════════════════════════════════════════════════════════════════
+//  risco/mat.rc  —  Librería risco.mat
+//
+//  Las primitivas del intérprete se invocan con prefijo prim_mat_
+//  porque los identificadores RISCO no pueden empezar con _.
+//
+//  Reglas de diseño:
+//    - prim_mat_sqrt y prim_mat_log devuelven Result<T> (tupla ok/err)
+//      → se usa unwrap() cuando se necesita el valor crudo internamente
+//    - prim_mat_matmul devuelve lista o null directamente
+//    - Las lambdas multilínea como argumento de map no son soportadas
+//      por la gramática → se usan funciones auxiliares nombradas (prim_mat_*)
+// ════════════════════════════════════════════════════════════════
+
+
+// ── GRUPO 1: Escalares ───────────────────────────────────────────
+
+/// mat.sqrt(x) → Result<Decimal>
+/// Raíz cuadrada por Newton-Raphson. Devuelve Ok o Err si x < 0.
+/// Usar con unwrap: unwrap(mat_sqrt(x), 0.0)
+mat_sqrt(x) => prim_mat_sqrt(x)
+
+/// mat.exp(x) → Decimal
+/// e^x por serie de Taylor. Nunca falla.
+mat_exp(x) => prim_mat_exp(x)
+
+/// mat.log(x) → Result<Decimal>
+/// Logaritmo natural. Devuelve Ok o Err si x <= 0.
+mat_log(x) => prim_mat_log(x)
+
+/// mat.abs(x) → Decimal
+mat_abs(x) =>
+    if x < 0:
+        return 0 - x
+    end
+    return x
+end
+
+/// mat.floor(x) → Num
+mat_floor(x) =>
+    val n = num(x)
+    if decimal(n) > x:
+        return n - 1
+    end
+    return n
+end
+
+/// mat.ceil(x) → Num
+mat_ceil(x) =>
+    val n = num(x)
+    if decimal(n) < x:
+        return n + 1
+    end
+    return n
+end
+
+/// mat.pow(x, n) → Decimal
+mat_pow(x, n) => x ^ n
+
+
+// ── GRUPO 2: Estadística ─────────────────────────────────────────
+
+/// mat.sum(v) → Decimal
+mat_sum(v) => reduce(v, (a, b) => a + b)
+
+/// mat.mean(v) → Decimal
+mat_mean(v) => mat_sum(v) / long(v)
+
+// Auxiliares para min/max (evitan lambda multilínea en reduce)
+prim_mat_menor(a, b) =>
+    if a < b:
+        return a
+    end
+    return b
+end
+
+prim_mat_mayor(a, b) =>
+    if a > b:
+        return a
+    end
+    return b
+end
+
+/// mat.min(v) → Decimal
+mat_min(v) => reduce(v, prim_mat_menor)
+
+/// mat.max(v) → Decimal
+mat_max(v) => reduce(v, prim_mat_mayor)
+
+/// mat.std(v) → Decimal
+/// Desviación estándar poblacional.
+/// Usa unwrap(mat_sqrt(...), 0.0) porque sqrt devuelve Result.
+mat_std(v) =>
+    val m    = mat_mean(v)
+    val devs = map(v, (x) => (x - m) ^ 2)
+    return unwrap(mat_sqrt(mat_mean(devs)), 0.0)
+end
+
+
+// ── GRUPO 3: Vectores ────────────────────────────────────────────
+
+/// mat.scale(k, v) → [Decimal]
+mat_scale(k, v) => map(v, (x) => k * x)
+
+/// mat.vadd(a, b) → [Decimal] | null
+mat_vadd(a, b) =>
+    if long(a) != long(b):
+        return null
+    end
+    return map(range(0, long(a)), (i) => a[i] + b[i])
+end
+
+/// mat.dot(a, b) → Decimal | null
+mat_dot(a, b) =>
+    if long(a) != long(b):
+        return null
+    end
+    val productos = map(range(0, long(a)), (i) => a[i] * b[i])
+    return mat_sum(productos)
+end
+
+/// mat.norm(v) → Decimal
+/// Norma euclidiana. Usa unwrap porque sqrt devuelve Result.
+mat_norm(v) =>
+    val sc = map(v, (x) => x ^ 2)
+    return unwrap(mat_sqrt(mat_sum(sc)), 0.0)
+end
+
+
+// ── GRUPO 4: Matrices ────────────────────────────────────────────
+
+/// mat.shape(M) → [Num]
+mat_shape(M) => [long(M), long(M[0])]
+
+// Auxiliar para mat_T: extrae la columna j como fila de la transpuesta.
+// Necesaria porque map no acepta lambdas multilínea como argumento.
+prim_mat_col_j(M, filas, j) =>
+    return map(range(0, filas), (i) => M[i][j])
+end
+
+/// mat.T(M) → [[Decimal]]
+mat_T(M) =>
+    val filas = long(M)
+    val cols  = long(M[0])
+    return map(range(0, cols), (j) => prim_mat_col_j(M, filas, j))
+end
+
+/// mat.get(M, i, j) → Decimal | null
+mat_get(M, i, j) =>
+    if i < 0:
+        return null
+    end
+    if i >= long(M):
+        return null
+    end
+    if j < 0:
+        return null
+    end
+    if j >= long(M[0]):
+        return null
+    end
+    return M[i][j]
+end
+
+/// mat.row(M, i) → [Decimal] | null
+mat_row(M, i) =>
+    if i < 0:
+        return null
+    end
+    if i >= long(M):
+        return null
+    end
+    return M[i]
+end
+
+/// mat.col(M, j) → [Decimal] | null
+mat_col(M, j) =>
+    if j < 0:
+        return null
+    end
+    if j >= long(M[0]):
+        return null
+    end
+    return map(range(0, long(M)), (i) => M[i][j])
+end
+
+// Auxiliar para mat_madd: suma la fila i de A y B elemento a elemento.
+prim_mat_suma_fila(A, B, cols, i) =>
+    return map(range(0, cols), (j) => A[i][j] + B[i][j])
+end
+
+/// mat.madd(A, B) → [[Decimal]] | null
+mat_madd(A, B) =>
+    if long(A) != long(B):
+        return null
+    end
+    if long(A[0]) != long(B[0]):
+        return null
+    end
+    val cols = long(A[0])
+    return map(range(0, long(A)), (i) => prim_mat_suma_fila(A, B, cols, i))
+end
+
+/// mat.mscale(k, M) → [[Decimal]]
+mat_mscale(k, M) =>
+    return map(M, (fila) => map(fila, (x) => k * x))
+end
+
+/// mat.mul(A, B) → [[Decimal]] | null
+mat_mul(A, B) => prim_mat_matmul(A, B)
+
+
+// ── GRUPO 5: Generación ──────────────────────────────────────────
+
+/// mat.zeros(f, c) → [[Decimal]]
+mat_zeros(f, c) =>
+    return map(range(0, f), (i) => map(range(0, c), (j) => 0.0))
+end
+
+/// mat.ones(f, c) → [[Decimal]]
+mat_ones(f, c) =>
+    return map(range(0, f), (i) => map(range(0, c), (j) => 1.0))
+end
+
+// Auxiliar para mat_identity: devuelve 1.0 si i==j, 0.0 si no.
+prim_mat_celda_id(i, j) =>
+    if i == j:
+        return 1.0
+    end
+    return 0.0
+end
+
+// Auxiliar para mat_identity: genera la fila i de la identidad.
+prim_mat_fila_id(n, i) =>
+    return map(range(0, n), (j) => prim_mat_celda_id(i, j))
+end
+
+/// mat.identity(n) → [[Decimal]]
+mat_identity(n) =>
+    return map(range(0, n), (i) => prim_mat_fila_id(n, i))
+end
+
+// Auxiliar para mat_fromList: extrae la fila i de la lista plana.
+prim_mat_fila_fromList(v, c, i) =>
+    return map(range(0, c), (j) => v[i * c + j])
+end
+
+/// mat.fromList(v, f, c) → [[Decimal]] | null
+mat_fromList(v, f, c) =>
+    if long(v) != f * c:
+        return null
+    end
+    return map(range(0, f), (i) => prim_mat_fila_fromList(v, c, i))
+end
+
+// Auxiliar para mat_random: genera una fila de c valores aleatorios.
+prim_mat_fila_random(c, i) =>
+    return map(range(0, c), (j) => prim_mat_lcg_next())
+end
+
+/// mat.random(f, c) → [[Decimal]]
+mat_random(f, c) =>
+    return map(range(0, f), (i) => prim_mat_fila_random(c, i))
+end
+
+/// mat.seed(n) → null
+mat_seed(n) => prim_mat_lcg_seed(n)
+
+
+// ── GRUPO 6: Deep learning ───────────────────────────────────────
+
+/// mat.mulT(A, B) → [[Decimal]] | null
+/// Calcula A × B^T sin construir la transpuesta. null si incompatibles.
+mat_mulT(A, B) => prim_mat_matmulT(A, B)
+
+/// mat.apply(f, M) → [[Decimal]]
+/// Aplica función escalar f a cada elemento de la matriz.
+mat_apply(f, M) =>
+    return map(M, (fila) => map(fila, (x) => f(x)))
+end
+
+/// mat.mulAdd(A, W, b) → [[Decimal]] | null
+/// A×W + bias b a cada fila. null si incompatibles.
+mat_mulAdd(A, W, b) => prim_mat_matmulAdd(A, W, b)
+
+// ── GRUPO 7: Trigonometría ────────────────────────────────────────
+//
+//  Estrategia en tres capas para precisión máxima (≤ 1 ULP):
+//
+//  CAPA 1 — prim_mat_mod2pi(x):
+//    Reduce x al rango [0, 2π) con mat_floor.
+//    Corrige el caso negativo sumando 2π.
+//
+//  CAPA 2 — prim_mat_sin_q1 / prim_mat_cos_q1:
+//    Evalúan sin/cos para r ∈ [0, π/2] aplicando la identidad
+//    de complemento cuando r > π/4:
+//       sin(r) = cos(π/2 − r)    cos(r) = sin(π/2 − r)
+//    El complemento (π/2 − r) siempre está en [0, π/4], por lo que
+//    la serie de Taylor converge en ≤ 8 términos.
+//
+//    ¿Por qué es necesario esto?
+//    La serie de Taylor sin(x) = x − x³/6 + x⁵/120 − ...
+//    en x = π/2 ≈ 1.5708 acumula error de cancelación entre términos
+//    grandes de signos opuestos, produciendo 1.0000000000000002.
+//    Con el complemento, la serie opera sobre π/2 − r ≈ 0, donde
+//    los términos son pequeños desde el principio y no hay cancelación.
+//
+//  CAPA 3 — mat_sin / mat_cos:
+//    Reducción por cuadrantes con identidades exactas.
+//
+//  NOTA: todas las funciones trabajan en RADIANES.
+//  Conversión: rad = grados * PI / 180.0
+
+// Constantes trigonométricas
+val PI   = 3.141592653589793
+val MAT_2PI  = 6.283185307179586
+val MAT_PI2  = 1.5707963267948966
+val MAT_PI4  = 0.7853981633974483
+val MAT_TOL  = 0.000000000000001
+
+// CAPA 1: reducir x a [0, 2π)
+prim_mat_mod2pi(x) =>
+    var r = x - decimal(mat_floor(x / MAT_2PI)) * MAT_2PI
+    if r < 0.0:
+        r = r + MAT_2PI
+    end
+    return r
+end
+
+// Serie de Taylor para sin(r), r en [0, π/4].
+// Recurrencia: t_{k+1} = −t_n · r² / ((2n)(2n+1))
+prim_mat_sin_serie(r) =>
+    val r2      = r * r
+    var termino = r
+    var acum    = r
+    var k       = 1
+    while mat_abs(termino) >= MAT_TOL:
+        termino = 0.0 - termino * r2 / decimal((2 * k) * (2 * k + 1))
+        acum    = acum + termino
+        k       = k + 1
+    end
+    return acum
+end
+
+// Serie de Taylor para cos(r), r en [0, π/4].
+// Recurrencia: t_{k+1} = −t_n · r² / ((2n−1)(2n))
+prim_mat_cos_serie(r) =>
+    val r2      = r * r
+    var termino = 1.0
+    var acum    = 1.0
+    var k       = 1
+    while mat_abs(termino) >= MAT_TOL:
+        termino = 0.0 - termino * r2 / decimal((2 * k - 1) * (2 * k))
+        acum    = acum + termino
+        k       = k + 1
+    end
+    return acum
+end
+
+// CAPA 2: sin/cos para r en [0, π/2] con identidad de complemento
+prim_mat_sin_q1(r) =>
+    if r > MAT_PI4:
+        return prim_mat_cos_serie(MAT_PI2 - r)
+    end
+    return prim_mat_sin_serie(r)
+end
+
+prim_mat_cos_q1(r) =>
+    if r > MAT_PI4:
+        return prim_mat_sin_serie(MAT_PI2 - r)
+    end
+    return prim_mat_cos_serie(r)
+end
+
+/// mat.sin(x) → Decimal   (x en RADIANES)
+/// Para grados usar: mat_sin(grados * PI / 180.0)
+mat_sin(x) =>
+    val r = prim_mat_mod2pi(x)
+    if r < MAT_PI2:
+        return prim_mat_sin_q1(r)
+    end
+    if r < PI:
+        return prim_mat_sin_q1(PI - r)
+    end
+    if r < PI + MAT_PI2:
+        return 0.0 - prim_mat_sin_q1(r - PI)
+    end
+    return 0.0 - prim_mat_sin_q1(MAT_2PI - r)
+end
+
+/// mat.cos(x) → Decimal   (x en RADIANES)
+/// Para grados usar: mat_cos(grados * PI / 180.0)
+mat_cos(x) =>
+    val r = prim_mat_mod2pi(x)
+    if r < MAT_PI2:
+        return prim_mat_cos_q1(r)
+    end
+    if r < PI:
+        return 0.0 - prim_mat_cos_q1(PI - r)
+    end
+    if r < PI + MAT_PI2:
+        return 0.0 - prim_mat_cos_q1(r - PI)
+    end
+    return prim_mat_cos_q1(MAT_2PI - r)
+end
+
+/// mat.tan(x) → Decimal | null
+/// Devuelve null en las asíntotas (π/2 + kπ).
+mat_tan(x) =>
+    val c = mat_cos(x)
+    if mat_abs(c) < MAT_TOL:
+        return null
+    end
+    return mat_sin(x) / c
+end
