@@ -1,4 +1,4 @@
-# RISCO V2 – Lenguaje DSL para Cálculo, Archivos y Visualización
+# RISCO V3
 
 ## 1. Descripción
 
@@ -8,6 +8,7 @@ El sistema está construido utilizando ANTLR4 y un intérprete en Python que per
 
 En esta versión (V2), el lenguaje incluye:
 
+- Intentos para Machine Learning
 - Librería matemática
 - Manejo de memoria
 - Manejo de archivos
@@ -58,8 +59,11 @@ Con:
 
 ## 4. Ejecución
 
+```
+python -m venv .venv
+pip install antlr4-python3-runtime
 python3 src/risco.py ejemplos/prueba_visual.rc
-
+```
 ---
 
 ## 5. Pruebas
