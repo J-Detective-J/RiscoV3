@@ -1,7 +1,12 @@
-val metros = [40.0, 55.0, 70.0, 85.0, 100.0, 120.0]
+val metros  = [40.0, 55.0, 70.0, 85.0, 100.0, 120.0]
 val precios = [80.0, 105.0, 130.0, 155.0, 180.0, 210.0]
-val X = prim_ml_agregar_bias(metros)
-val coefs = unwrap(ml_ajustar(X, precios), [])
-val y_pred = map(metros, (x) => ml_predecir(coefs, x))
-print(ml_r2(precios, y_pred))
-print(ml_predecir(coefs, 95.0))  // precio estimado para 95 m²
+
+val cfg = ai.config(20, 0.1, 0.0)
+val X   = map(metros, (x) => [x])
+val mod = unwrap(ml.ajustar(X, precios, cfg), null)
+
+
+print(ml.predecir(mod, [95.0]))
+
+val hist = ml.historial(mod)
+visual.line(hist, "Perdida MSE por epoca", "Epocas", "MSE", "perdida.svg")
