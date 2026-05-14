@@ -62,7 +62,7 @@ Con:
 ```
 python -m venv .venv
 pip install antlr4-python3-runtime
-python3 src/risco.py ejemplos/prueba_visual.rc
+python3 src/risco.py ejemplos/
 ```
 ---
 
