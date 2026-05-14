@@ -6,7 +6,7 @@ RISCO es un lenguaje específico de dominio (DSL) diseñado para soportar operac
 
 El sistema está construido utilizando ANTLR4 y un intérprete en Python que permite ejecutar programas escritos en el lenguaje `.rc`.
 
-En esta versión (V2), el lenguaje incluye:
+En esta versión (V3), el lenguaje incluye:
 
 - Intentos para Machine Learning
 - Librería matemática
