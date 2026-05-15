@@ -29,3 +29,17 @@ ml_historial(modelo) => modelo[2]
 
 /// ml.r2(y_real, y_pred) → Decimal
 ml_r2(y_real, y_pred) => prim_ml_r2(y_real, y_pred)
+/// ml.logistic.ajustar(X, y, cfg) → Result<[pesos, bias, historial, medias, desviaciones]>
+ml_logistic_ajustar(X, y, cfg) => prim_ml_ajustar_logistico(X, y, cfg)
+
+/// ml.logistic.prob(modelo, x) → Decimal
+ml_logistic_prob(modelo, x) => prim_ml_logistic_prob(modelo, x)
+
+/// ml.logistic.clasificar(modelo, x) → Num
+ml_logistic_clasificar(modelo, x) =>
+    var prob = ml_logistic_prob(modelo, x)
+    if prob >= 0.5:
+        return 1
+    end
+    return 0
+end

@@ -1,0 +1,37 @@
+print("REGRESION LOGISTICA")
+
+// Datos: horas de estudio
+val horas = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+
+// Etiqueta: 0 = no aprueba, 1 = aprueba
+val aprueba = [0, 0, 0, 0, 1, 1, 1, 1]
+
+// Convertir a matriz de características
+val X = map(horas, (x) => [x])
+
+// Configuración: epocas, tasa aprendizaje, alpha
+val cfg = ai.config(100, 0.3, 0.0)
+
+// Entrenar modelo
+val modelo = unwrap(ml_logistic_ajustar(X, aprueba, cfg), null)
+
+print("Modelo:")
+print(modelo)
+
+print("Probabilidad para 7 horas:")
+print(ml_logistic_prob(modelo, [7.0]))
+
+print("Clase para 7 horas:")
+print(ml_logistic_clasificar(modelo, [7.0]))
+
+print("Probabilidad para 2 horas:")
+print(ml_logistic_prob(modelo, [2.0]))
+
+print("Clase para 2 horas:")
+print(ml_logistic_clasificar(modelo, [2.0]))
+
+val hist = ml_historial(modelo)
+
+visual.line(hist,"Perdida Regresion Logistica","Epocas","Binary Cross Entropy","perdida_logistica.svg")
+
+print("Grafica generada: perdida_logistica.svg")

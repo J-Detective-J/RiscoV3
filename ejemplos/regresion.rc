@@ -10,3 +10,12 @@ print(ml.predecir(mod, [95.0]))
 
 val hist = ml.historial(mod)
 visual.line(hist, "Perdida MSE por epoca", "Epocas", "MSE", "perdida.svg")
+
+print("Pesos:")
+print(mod[0])
+
+print("Bias:")
+print(mod[1])
+
+print("Historial:")
+print(mod[2])

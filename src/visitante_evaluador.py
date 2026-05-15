@@ -212,52 +212,6 @@ def _prim_log(x):
 
     return 2.0 * s + k * _LN2
 
-def _prim_regresion_lineal(X, y, epocas, tasa, alpha):
-    n = len(X)
-    n_feat = len(X[0])
-
-    # Normalizar y para estabilidad numérica
-    y_mean = sum(y) / n
-    y_std  = (sum((yi - y_mean) ** 2 for yi in y) / n) ** 0.5
-    y_std  = y_std if y_std > 1e-8 else 1.0
-    y_norm = [(yi - y_mean) / y_std for yi in y]
-
-    # Normalizar cada columna de X (excepto la de bias: columna de 1s)
-    col_means = []
-    col_stds  = []
-    for j in range(n_feat):
-        col = [X[i][j] for i in range(n)]
-        cm  = sum(col) / n
-        cs  = (sum((v - cm) ** 2 for v in col) / n) ** 0.5
-        cs  = cs if cs > 1e-8 else 1.0
-        col_means.append(cm)
-        col_stds.append(cs)
-
-    X_norm = [[(X[i][j] - col_means[j]) / col_stds[j]
-               for j in range(n_feat)] for i in range(n)]
-
-    w = [0.0] * n_feat
-    b = 0.0
-    loss_history = []
-
-    for _ in range(epocas):
-        preds  = [sum(X_norm[i][j] * w[j] for j in range(n_feat)) + b
-                  for i in range(n)]
-        errors = [preds[i] - y_norm[i] for i in range(n)]
-        mse    = sum(e ** 2 for e in errors) / n
-        loss_history.append(mse)
-        grad_w = [sum(errors[i] * X_norm[i][j] for i in range(n)) / n
-                  + alpha * w[j] for j in range(n_feat)]
-        grad_b = sum(errors) / n
-        w = [w[j] - tasa * grad_w[j] for j in range(n_feat)]
-        b = b - tasa * grad_b
-
-    # Desnormalizar coeficientes al espacio original
-    w_orig = [w[j] * y_std / col_stds[j] for j in range(n_feat)]
-    b_orig = (b * y_std + y_mean
-              - sum(w_orig[j] * col_means[j] for j in range(n_feat)))
-
-    return [w_orig, b_orig, loss_history]
 
 
 
@@ -1151,6 +1105,8 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_mat_lcg_seed':  self._builtin_mat_seed,
             'prim_ml_ajustar_lineal': self._builtin_ml_ajustar_lineal,
             'prim_ml_r2':             self._builtin_ml_r2,
+            'prim_ml_ajustar_logistico': self._builtin_ml_ajustar_logistico,
+            'prim_ml_logistic_prob':     self._builtin_ml_logistic_prob,
 
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
@@ -1400,7 +1356,7 @@ class VisitanteEvaluador(RISCOVisitor):
         resultado = _prim_regresion_lineal(X, y, epocas, tasa, alpha)
         return ("ok", resultado)
 
-
+    
     def _builtin_ml_r2(self, args):
         """
     prim_ml_r2(y_real, y_pred) → Decimal
@@ -1846,3 +1802,244 @@ class VisitanteEvaluador(RISCOVisitor):
             del self.memoria[nombre]
 
         return None
+
+    def _builtin_ml_ajustar_logistico(self, args):
+        if len(args) != 3:
+            raise Exception("prim_ml_ajustar_logistico() requiere X, y, cfg")
+        X, y, cfg = args
+        # cfg es lista [epocas, tasa, alpha] creada por ai_config
+        if not isinstance(cfg, list) or len(cfg) != 3:
+            raise Exception("cfg debe ser un Config creado con ai.config()")
+        epocas = int(cfg[0])
+        tasa   = float(cfg[1])
+        alpha  = float(cfg[2])
+        resultado = _prim_regresion_logistica(X, y, epocas, tasa, alpha)
+        if resultado is None:
+            return ("err", "Etiquetas y deben ser 0 o 1")
+        return ("ok", resultado)
+
+    def _builtin_ml_logistic_prob(self, args):
+        if len(args) != 2:
+            raise Exception("prim_ml_logistic_prob() requiere modelo, x")
+        modelo, x = args
+        if not isinstance(modelo, list) or len(modelo) != 5:
+            raise Exception("modelo debe ser un modelo logístico entrenado")
+        return _prim_logistic_prob(modelo, x)
+
+#ML 
+#REGRESION LINEAL
+def _prim_regresion_lineal(X, y, epocas, tasa, alpha):
+    """
+    Entrena un modelo de regresión lineal usando descenso de gradiente.
+
+    Normaliza las características y el objetivo para estabilidad numérica,
+    aplica regularización L2 (ridge) y desnormaliza los coeficientes finales
+    al espacio original. Usa MSE como función de pérdida.
+
+    Args:
+        X (list[list[float]]): Matriz de características, n_muestras × n_características.
+        y (list[float]): Vector de objetivos, longitud n_muestras.
+        epocas (int): Número de iteraciones de entrenamiento.
+        tasa (float): Tasa de aprendizaje para el descenso de gradiente.
+        alpha (float): Parámetro de regularización L2 (ridge).
+
+    Returns:
+        list: [pesos, bias, historial_perdida]
+            - pesos (list[float]): Coeficientes del modelo en el espacio original.
+            - bias (float): Término independiente en el espacio original.
+            - historial_perdida (list[float]): MSE en cada época.
+    """
+    n = len(X)
+    n_feat = len(X[0])
+
+    # Normalizar y para estabilidad numérica
+    y_mean = sum(y) / n
+    y_std  = (sum((yi - y_mean) ** 2 for yi in y) / n) ** 0.5
+    y_std  = y_std if y_std > 1e-8 else 1.0
+    y_norm = [(yi - y_mean) / y_std for yi in y]
+
+    # Normalizar cada columna de X (excepto la de bias: columna de 1s)
+    col_means = []
+    col_stds  = []
+    for j in range(n_feat):
+        col = [X[i][j] for i in range(n)]
+        cm  = sum(col) / n
+        cs  = (sum((v - cm) ** 2 for v in col) / n) ** 0.5
+        cs  = cs if cs > 1e-8 else 1.0
+        col_means.append(cm)
+        col_stds.append(cs)
+
+    X_norm = [[(X[i][j] - col_means[j]) / col_stds[j]
+               for j in range(n_feat)] for i in range(n)]
+
+    w = [0.0] * n_feat
+    b = 0.0
+    loss_history = []
+
+    for _ in range(epocas):
+        preds  = [sum(X_norm[i][j] * w[j] for j in range(n_feat)) + b
+                  for i in range(n)]
+        errors = [preds[i] - y_norm[i] for i in range(n)]
+        mse    = sum(e ** 2 for e in errors) / n
+        loss_history.append(mse)
+        grad_w = [sum(errors[i] * X_norm[i][j] for i in range(n)) / n
+                  + alpha * w[j] for j in range(n_feat)]
+        grad_b = sum(errors) / n
+        w = [w[j] - tasa * grad_w[j] for j in range(n_feat)]
+        b = b - tasa * grad_b
+
+    # Desnormalizar coeficientes al espacio original
+    w_orig = [w[j] * y_std / col_stds[j] for j in range(n_feat)]
+    b_orig = (b * y_std + y_mean
+              - sum(w_orig[j] * col_means[j] for j in range(n_feat)))
+
+    return [w_orig, b_orig, loss_history]
+
+# regresion logistica
+def _prim_sigmoid(z):
+    """
+    Función sigmoide implementada sin importar math.
+
+    Convierte cualquier valor real en una probabilidad entre 0 y 1,
+    útil para clasificación binaria en regresión logística.
+
+    Args:
+        z (float): Valor de entrada real.
+
+    Returns:
+        float: Probabilidad en [0, 1].
+    """
+    return 1.0 / (1.0 + _prim_exp(-z))
+
+
+def _prim_regresion_logistica(X, y, epocas, tasa, alpha):
+    """
+    Regresión logística binaria por gradiente descendente.
+
+    Entrena un modelo de clasificación binaria usando entropía cruzada binaria
+    como función de pérdida, con regularización L2 y normalización de características.
+
+    Args:
+        X (list[list[float]]): Matriz de características, n_muestras × n_características.
+        y (list[int]): Etiquetas binarias (0 o 1), longitud n_muestras.
+        epocas (int): Número de iteraciones de entrenamiento.
+        tasa (float): Tasa de aprendizaje para el descenso de gradiente.
+        alpha (float): Parámetro de regularización L2.
+
+    Returns:
+        list | None: Modelo entrenado [pesos, bias, historial_perdida, medias, stds],
+                      o None si y contiene valores inválidos.
+    """
+
+    n = len(X)
+    n_feat = len(X[0])
+
+    # Validar y
+    for yi in y:
+        if yi != 0 and yi != 1:
+            return None
+
+    # Normalizar X para estabilidad
+    col_means = []
+    col_stds = []
+
+    for j in range(n_feat):
+        col = [X[i][j] for i in range(n)]
+        cm = sum(col) / n
+        cs = (sum((v - cm) ** 2 for v in col) / n) ** 0.5
+        cs = cs if cs > 1e-8 else 1.0
+
+        col_means.append(cm)
+        col_stds.append(cs)
+
+    X_norm = [
+        [
+            (X[i][j] - col_means[j]) / col_stds[j]
+            for j in range(n_feat)
+        ]
+        for i in range(n)
+    ]
+
+    w = [0.0] * n_feat
+    b = 0.0
+    loss_history = []
+
+    eps = 1e-12
+
+    for _ in range(epocas):
+        preds = []
+
+        for i in range(n):
+            z = b
+            for j in range(n_feat):
+                z += X_norm[i][j] * w[j]
+
+            p = _prim_sigmoid(z)
+            preds.append(p)
+
+        # Binary Cross Entropy
+        loss = 0.0
+        for i in range(n):
+            p = min(max(preds[i], eps), 1.0 - eps)
+            loss += -(y[i] * _prim_log(p) + (1 - y[i]) * _prim_log(1 - p))
+
+        loss = loss / n
+
+        # Regularización L2
+        reg = 0.0
+        for j in range(n_feat):
+            reg += w[j] * w[j]
+
+        loss = loss + (alpha / 2.0) * reg
+        loss_history.append(loss)
+
+        # Gradientes
+        grad_w = [0.0] * n_feat
+        grad_b = 0.0
+
+        for i in range(n):
+            error = preds[i] - y[i]
+            grad_b += error
+
+            for j in range(n_feat):
+                grad_w[j] += error * X_norm[i][j]
+
+        grad_b = grad_b / n
+
+        for j in range(n_feat):
+            grad_w[j] = (grad_w[j] / n) + alpha * w[j]
+
+        # Actualización
+        for j in range(n_feat):
+            w[j] = w[j] - tasa * grad_w[j]
+
+        b = b - tasa * grad_b
+
+    modelo = [w, b, loss_history, col_means, col_stds]
+    return modelo
+
+
+def _prim_logistic_prob(modelo, x):
+    """
+    Calcula la probabilidad de clase positiva usando un modelo logístico entrenado.
+
+    Args:
+        modelo (list): Modelo entrenado [pesos, bias, historial, medias, stds].
+        x (list[float]): Vector de características de entrada.
+
+    Returns:
+        float: Probabilidad de clase positiva en [0, 1].
+    """
+
+    w = modelo[0]
+    b = modelo[1]
+    col_means = modelo[3]
+    col_stds = modelo[4]
+
+    z = b
+
+    for j in range(len(w)):
+        x_norm = (x[j] - col_means[j]) / col_stds[j]
+        z += x_norm * w[j]
+
+    return _prim_sigmoid(z)
