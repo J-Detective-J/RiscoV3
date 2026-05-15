@@ -1,0 +1,22 @@
+// Datos: AND lógico
+val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]
+val y = [0.0, 0.0, 0.0, 1.0]
+
+val cfg = ai_config(100, 0.1, 0.0)
+val modelo = perceptron_ajustar(X, y, cfg)
+
+val preds = perceptron_predecir(modelo, X)
+print("Predicciones: ")
+print(preds)
+
+val acc = metricas_accuracy(y, preds)
+print("Exactitud: ")
+print(acc)
+
+val prec = metricas_precision(y, preds)
+print("Precisión: ")
+print(prec)
+
+val mc = metricas_confusion(y, preds)
+print("Matriz de confusión: ")
+print(mc)

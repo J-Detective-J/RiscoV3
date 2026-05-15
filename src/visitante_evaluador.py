@@ -1103,11 +1103,13 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_mat_matmulAdd': self._builtin_mat_mulAdd,
             'prim_mat_lcg_next':  self._builtin_prim_lcg_next,
             'prim_mat_lcg_seed':  self._builtin_mat_seed,
+            # ── Primitivas internas de ia.rc ────────────────
             'prim_ml_ajustar_lineal': self._builtin_ml_ajustar_lineal,
             'prim_ml_r2':             self._builtin_ml_r2,
             'prim_ml_ajustar_logistico': self._builtin_ml_ajustar_logistico,
             'prim_ml_logistic_prob':     self._builtin_ml_logistic_prob,
-
+            'prim_perceptron_fit':     self._builtin_perceptron_fit,
+            'prim_perceptron_predict': self._builtin_perceptron_predict,
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
@@ -1826,6 +1828,18 @@ class VisitanteEvaluador(RISCOVisitor):
             raise Exception("modelo debe ser un modelo logístico entrenado")
         return _prim_logistic_prob(modelo, x)
 
+    def _builtin_perceptron_fit(self, args):
+        if len(args) != 4:
+            raise Exception("prim_perceptron_fit() requiere X, y, epocas, tasa")
+        X, y, epocas, tasa = args
+        return _prim_perceptron_fit(X, y, int(epocas), float(tasa))
+
+    def _builtin_perceptron_predict(self, args):
+        if len(args) != 3:
+            raise Exception("prim_perceptron_predict() requiere w, b, X")
+        w, b, X = args
+        return _prim_perceptron_predict(w, float(b), X)
+
 #ML 
 #REGRESION LINEAL
 def _prim_regresion_lineal(X, y, epocas, tasa, alpha):
@@ -2043,3 +2057,68 @@ def _prim_logistic_prob(modelo, x):
         z += x_norm * w[j]
 
     return _prim_sigmoid(z)
+
+def _prim_perceptron_fit(X, y, epocas, tasa):
+    """
+    Entrena un perceptrón con la regla de Rosenblatt.
+    X: [[float]] — matriz de entrada (n_muestras × n_features)
+    y: [float]   — etiquetas binarias (0.0 o 1.0)
+    Retorna [pesos, bias, historial_error]
+    """
+    n_feat = len(X[0])
+    w = [0.0] * n_feat
+    b = 0.0
+    historial = []
+    
+    for _ in range(epocas):
+        errores = 0
+        for i in range(len(X)):
+            # Suma ponderada
+            z = sum(w[j] * X[i][j] for j in range(n_feat)) + b
+            # Función de paso
+            pred = 1.0 if z >= 0.0 else 0.0
+            # Error
+            err = y[i] - pred
+            if err != 0.0:
+                errores += 1
+                # Actualizar pesos
+                for j in range(n_feat):
+                    w[j] += tasa * err * X[i][j]
+                b += tasa * err
+        historial.append(float(errores) / len(X))
+    
+    return [w, b, historial]
+
+
+def _prim_perceptron_predict(w, b, X):
+    """
+    Predice usando un perceptrón entrenado.
+    Retorna lista de 0.0 o 1.0.
+    """
+    preds = []
+    for xi in X:
+        z = sum(w[j] * xi[j] for j in range(len(w))) + b
+        preds.append(1.0 if z >= 0.0 else 0.0)
+    return preds
+
+def _prim_accuracy(y_real, y_pred):
+    if len(y_real) != len(y_pred):
+        return 0.0
+    correctos = sum(1 for a, b in zip(y_real, y_pred) if a == b)
+    return correctos / len(y_real)
+
+def _prim_precision(y_real, y_pred):
+    """Precisión para clasificación binaria (clase positiva = 1.0)"""
+    vp = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 1.0)
+    fp = sum(1 for a, b in zip(y_real, y_pred) if a == 0.0 and b == 1.0)
+    return vp / (vp + fp) if (vp + fp) > 0 else 0.0
+
+def _prim_confusion_matrix(y_real, y_pred):
+    """
+    Retorna [[VN, FP], [FN, VP]] como lista de listas.
+    """
+    vn = sum(1 for a, b in zip(y_real, y_pred) if a == 0.0 and b == 0.0)
+    fp = sum(1 for a, b in zip(y_real, y_pred) if a == 0.0 and b == 1.0)
+    fn = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 0.0)
+    vp = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 1.0)
+    return [[vn, fp], [fn, vp]]

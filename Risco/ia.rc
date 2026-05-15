@@ -43,3 +43,32 @@ ml_logistic_clasificar(modelo, x) =>
     end
     return 0
 end
+
+// ── GRUPO 2: Deep Learning ──────────────────────────────────────
+
+/// perceptron.ajustar(X, y, cfg) → [pesos, bias, historial]
+perceptron_ajustar(X, y, cfg) =>
+    prim_perceptron_fit(X, y, cfg[0], cfg[1])
+end
+
+/// perceptron.predecir(modelo, X) → [Decimal]
+perceptron_predecir(modelo, X) =>
+    prim_perceptron_predict(modelo[0], modelo[1], X)
+end
+
+// ── Métricas ──────────────────────────────────────────────────
+
+/// metricas.accuracy(y_real, y_pred) → Decimal
+metricas_accuracy(y_real, y_pred) =>
+    prim_accuracy(y_real, y_pred)
+end
+
+/// metricas.precision(y_real, y_pred) → Decimal
+metricas_precision(y_real, y_pred) =>
+    prim_precision(y_real, y_pred)
+end
+
+/// metricas.confusion(y_real, y_pred) → [[Num]]
+metricas_confusion(y_real, y_pred) =>
+    prim_confusion_matrix(y_real, y_pred)
+end
