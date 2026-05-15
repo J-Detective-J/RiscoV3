@@ -1059,3 +1059,119 @@ def test_factorial_iterativo_20():
     )
     resultado = ejecutar(codigo)
     assert resultado[0] == "2432902008176640000"
+# ── Regresión logística ───────────────────────────────────────
+
+def test_ml_logistic_ajustar_basico():
+    codigo = (
+        'val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]\n'
+        'val y = [0,0,0,0,1,1,1,1]\n'
+        'val X = map(horas, (x) => [x])\n'
+        'val cfg = ai_config(100, 0.3, 0.0)\n'
+        'val modelo = unwrap(ml_logistic_ajustar(X, y, cfg), null)\n'
+        'print(long(modelo))\n'
+    )
+
+    resultado = ejecutar(codigo)
+
+    assert resultado == ["5"]
+def test_ml_logistic_prob_aprobado():
+    codigo = (
+        'val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]\n'
+        'val y = [0,0,0,0,1,1,1,1]\n'
+        'val X = map(horas, (x) => [x])\n'
+        'val cfg = ai_config(100, 0.3, 0.0)\n'
+        'val modelo = unwrap(ml_logistic_ajustar(X, y, cfg), null)\n'
+        'print(ml_logistic_prob(modelo, [7.0]))\n'
+    )
+
+    resultado = ejecutar(codigo)
+
+    assert float(resultado[0]) > 0.8
+def test_ml_logistic_clasificar():
+    codigo = (
+        'val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]\n'
+        'val y = [0,0,0,0,1,1,1,1]\n'
+        'val X = map(horas, (x) => [x])\n'
+        'val cfg = ai_config(100, 0.3, 0.0)\n'
+        'val modelo = unwrap(ml_logistic_ajustar(X, y, cfg), null)\n'
+        'print(ml_logistic_clasificar(modelo, [7.0]))\n'
+        'print(ml_logistic_clasificar(modelo, [2.0]))\n'
+    )
+
+    resultado = ejecutar(codigo)
+
+    assert resultado == ["1", "0"]
+def test_ml_logistic_historial_disminuye():
+    codigo = (
+        'val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]\n'
+        'val y = [0,0,0,0,1,1,1,1]\n'
+        'val X = map(horas, (x) => [x])\n'
+        'val cfg = ai_config(100, 0.3, 0.0)\n'
+        'val modelo = unwrap(ml_logistic_ajustar(X, y, cfg), null)\n'
+        'val h = ml_historial(modelo)\n'
+        'print(h[0])\n'
+        'print(h[long(h)-1])\n'
+    )
+
+    resultado = ejecutar(codigo)
+
+    inicial = float(resultado[0])
+    final = float(resultado[1])
+
+    assert final < inicial
+# ── Regresión lineal ──────────────────────────────────────────
+
+def test_ml_lineal_ajustar_basico():
+    codigo = (
+        'val X = [[1.0], [2.0], [3.0], [4.0]]\n'
+        'val y = [2.0, 4.0, 6.0, 8.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = unwrap(ml_ajustar(X, y, cfg), null)\n'
+        'print(long(modelo))\n'
+    )
+    assert ejecutar(codigo) == ["3"]
+
+
+def test_ml_lineal_predecir():
+    codigo = (
+        'val X = [[1.0], [2.0], [3.0], [4.0]]\n'
+        'val y = [2.0, 4.0, 6.0, 8.0]\n'
+        'val cfg = ai_config(300, 0.1, 0.0)\n'
+        'val modelo = unwrap(ml_ajustar(X, y, cfg), null)\n'
+        'print(ml_predecir(modelo, [5.0]))\n'
+    )
+    resultado = ejecutar(codigo)
+    pred = float(resultado[0])
+    assert abs(pred - 10.0) < 0.5
+
+
+def test_ml_lineal_historial_disminuye():
+    codigo = (
+        'val X = [[1.0], [2.0], [3.0], [4.0]]\n'
+        'val y = [2.0, 4.0, 6.0, 8.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = unwrap(ml_ajustar(X, y, cfg), null)\n'
+        'val h = ml_historial(modelo)\n'
+        'print(h[0])\n'
+        'print(h[long(h)-1])\n'
+    )
+    resultado = ejecutar(codigo)
+
+    inicial = float(resultado[0])
+    final = float(resultado[1])
+
+    assert final < inicial
+
+
+def test_ml_lineal_r2_alto():
+    codigo = (
+        'val X = [[1.0], [2.0], [3.0], [4.0]]\n'
+        'val y = [2.0, 4.0, 6.0, 8.0]\n'
+        'val cfg = ai_config(300, 0.1, 0.0)\n'
+        'val modelo = unwrap(ml_ajustar(X, y, cfg), null)\n'
+        'val pred = [ml_predecir(modelo, [1.0]), ml_predecir(modelo, [2.0]), ml_predecir(modelo, [3.0]), ml_predecir(modelo, [4.0])]\n'
+        'print(ml_r2(y, pred))\n'
+    )
+    resultado = ejecutar(codigo)
+    r2 = float(resultado[0])
+    assert r2 > 0.95
