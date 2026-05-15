@@ -1110,6 +1110,9 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_ml_logistic_prob':     self._builtin_ml_logistic_prob,
             'prim_perceptron_fit':     self._builtin_perceptron_fit,
             'prim_perceptron_predict': self._builtin_perceptron_predict,
+            'prim_accuracy':          self._builtin_prim_accuracy,
+            'prim_precision':         self._builtin_prim_precision,
+            'prim_confusion_matrix':  self._builtin_prim_confusion_matrix,
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
@@ -1839,6 +1842,24 @@ class VisitanteEvaluador(RISCOVisitor):
             raise Exception("prim_perceptron_predict() requiere w, b, X")
         w, b, X = args
         return _prim_perceptron_predict(w, float(b), X)
+
+    def _builtin_prim_accuracy(self, args):
+        if len(args) != 2:
+            raise Exception("prim_accuracy() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_accuracy(y_real, y_pred)
+
+    def _builtin_prim_precision(self, args):
+        if len(args) != 2:
+            raise Exception("prim_precision() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_precision(y_real, y_pred)
+
+    def _builtin_prim_confusion_matrix(self, args):
+        if len(args) != 2:
+            raise Exception("prim_confusion_matrix() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_confusion_matrix(y_real, y_pred)
 
 #ML 
 #REGRESION LINEAL

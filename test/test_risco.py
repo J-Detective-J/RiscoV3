@@ -1175,3 +1175,143 @@ def test_ml_lineal_r2_alto():
     resultado = ejecutar(codigo)
     r2 = float(resultado[0])
     assert r2 > 0.95
+
+# ── Perceptrón ────────────────────────────────────────────────
+
+def test_perceptron_ajustar_basico():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(100, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'print(long(modelo))\n'
+    )
+    assert ejecutar(codigo) == ["3"]
+
+
+def test_perceptron_pesos_longitud_igual_a_features():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(100, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'print(long(modelo[0]))\n'
+    )
+    assert ejecutar(codigo) == ["2"]
+
+
+def test_perceptron_historial_longitud_igual_a_epocas():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(50, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'print(long(modelo[2]))\n'
+    )
+    assert ejecutar(codigo) == ["50"]
+
+
+def test_perceptron_aprende_and():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado == 1.0
+
+
+def test_perceptron_aprende_or():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 1.0, 1.0, 1.0]\n'
+        'val cfg = ai_config(100, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado == 1.0
+
+
+def test_perceptron_prediccion_longitud_correcta():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(100, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(long(pred))\n'
+    )
+    assert ejecutar(codigo) == ["4"]
+
+
+def test_perceptron_historial_disminuye():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val h = modelo[2]\n'
+        'print(h[0])\n'
+        'print(h[long(h)-1])\n'
+    )
+    resultado = ejecutar(codigo)
+    inicial = float(resultado[0])
+    final = float(resultado[1])
+    assert final <= inicial
+
+
+def test_perceptron_converge_error_cero():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val h = modelo[2]\n'
+        'print(h[long(h)-1])\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado == 0.0
+
+
+def test_perceptron_accuracy_and():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    assert ejecutar(codigo) == ["1.0"]
+
+
+def test_perceptron_precision_and():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_precision(y, pred))\n'
+    )
+    assert ejecutar(codigo) == ["1.0"]
+
+
+def test_perceptron_matriz_confusion_and():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'val mc = metricas_confusion(y, pred)\n'
+        'print(mc[0][0])\n'
+        'print(mc[1][1])\n'
+    )
+    resultado = ejecutar(codigo)
+    assert resultado == ["3", "1"]
