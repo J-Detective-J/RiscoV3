@@ -1113,6 +1113,10 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_accuracy':          self._builtin_prim_accuracy,
             'prim_precision':         self._builtin_prim_precision,
             'prim_confusion_matrix':  self._builtin_prim_confusion_matrix,
+            'prim_relu':              self._builtin_relu,
+            'prim_tanh':              self._builtin_tanh,
+            'prim_relu_deriv':        self._builtin_relu_deriv,
+            'prim_tanh_deriv':        self._builtin_tanh_deriv,
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
@@ -1346,6 +1350,35 @@ class VisitanteEvaluador(RISCOVisitor):
             raise Exception("split() requiere dos Text")
     
         return texto.split(separador)
+    
+    #-- relu y tanh para IA --
+
+    def _builtin_relu(self, args):
+        if len(args) != 1:
+            raise Exception("relu() requiere exactamente 1 argumento")
+        x = args[0]
+        return max(0.0, float(x))
+
+    def _builtin_tanh(self, args):
+        if len(args) != 1:
+            raise Exception("tanh() requiere exactamente 1 argumento")
+        import math
+        x = args[0]
+        return math.tanh(float(x))
+
+    def _builtin_relu_deriv(self, args):
+        if len(args) != 1:
+            raise Exception("relu_deriv() requiere exactamente 1 argumento")
+        x = args[0]
+        return 1.0 if float(x) > 0.0 else 0.0
+
+    def _builtin_tanh_deriv(self, args):
+        if len(args) != 1:
+            raise Exception("tanh_deriv() requiere exactamente 1 argumento")
+        import math
+        x = args[0]
+        t = math.tanh(float(x))
+        return 1.0 - (t * t)
 
     # ── Primitivas mat ────────────────────────────────────────
     def _builtin_ml_ajustar_lineal(self, args):
