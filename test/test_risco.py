@@ -1315,3 +1315,28 @@ def test_perceptron_matriz_confusion_and():
     )
     resultado = ejecutar(codigo)
     assert resultado == ["3", "1"]
+
+
+def test_relu_basico():
+    codigo = (
+        'print(prim_relu(-5.0))\n'
+        'print(prim_relu(0.0))\n'
+        'print(prim_relu(3.5))\n'
+    )
+    assert ejecutar(codigo) == ["0.0", "0.0", "3.5"]
+
+
+def test_tanh_basico():
+    codigo = (
+        'print(prim_tanh(0.0))\n'
+    )
+    assert ejecutar(codigo) == ["0.0"]
+
+
+def test_derivadas_activacion():
+    codigo = (
+        'print(prim_relu_deriv(2.5))\n'
+        'print(prim_relu_deriv(-1.0))\n'
+        'print(prim_tanh_deriv(0.0))\n'
+    )
+    assert ejecutar(codigo) == ["1.0", "0.0", "1.0"]
