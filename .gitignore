@@ -1,0 +1,16 @@
+# SVG generados automaticamente
+*.svg
+
+# Python
+__pycache__/
+*.pyc
+
+# Entornos virtuales
+venv/
+.env/
+
+# VSCode
+.vscode/
+
+# Sistema
+.DS_Store
