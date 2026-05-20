@@ -1,7 +1,8 @@
 // ── GRUPO 1: Machine Learning ──────────────────────────────────────
 
-/// ai.config(epocas, tasa, alpha) → [epocas, tasa, alpha]
 ai_config(epocas, tasa, alpha) => [epocas, tasa, alpha]
+
+ai_config_activacion(epocas, tasa, alpha, activacion) => [epocas, tasa, alpha, activacion]
 
 /// ml.ajustar(X, y, cfg) → Result<[pesos, bias, historial]>
 /// X: lista plana de x, NO hace falta agregar columna de 1s.

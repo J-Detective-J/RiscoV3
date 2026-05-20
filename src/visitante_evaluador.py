@@ -1117,6 +1117,8 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_tanh':              self._builtin_tanh,
             'prim_relu_deriv':        self._builtin_relu_deriv,
             'prim_tanh_deriv':        self._builtin_tanh_deriv,
+            'prim_sigmoid': self._builtin_sigmoid,
+            'prim_sigmoid_deriv': self._builtin_sigmoid_deriv,
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
@@ -1379,7 +1381,21 @@ class VisitanteEvaluador(RISCOVisitor):
         x = args[0]
         t = math.tanh(float(x))
         return 1.0 - (t * t)
+    
+    def _builtin_sigmoid(self, args):
+        if len(args) != 1:
+            raise Exception("sigmoid() requiere exactamente 1 argumento")
+        x = float(args[0])
+        return _prim_sigmoid(x)
 
+
+    def _builtin_sigmoid_deriv(self, args):
+        if len(args) != 1:
+            raise Exception("sigmoid_deriv() requiere exactamente 1 argumento")
+        x = float(args[0])
+        s = _prim_sigmoid(x)
+        return s * (1.0 - s)
+    
     # ── Primitivas mat ────────────────────────────────────────
     def _builtin_ml_ajustar_lineal(self, args):
         if len(args) != 3:
@@ -1844,23 +1860,41 @@ class VisitanteEvaluador(RISCOVisitor):
     def _builtin_ml_ajustar_logistico(self, args):
         if len(args) != 3:
             raise Exception("prim_ml_ajustar_logistico() requiere X, y, cfg")
+
         X, y, cfg = args
-        # cfg es lista [epocas, tasa, alpha] creada por ai_config
-        if not isinstance(cfg, list) or len(cfg) != 3:
+
+        if not isinstance(cfg, list):
             raise Exception("cfg debe ser un Config creado con ai.config()")
-        epocas = int(cfg[0])
-        tasa   = float(cfg[1])
-        alpha  = float(cfg[2])
-        resultado = _prim_regresion_logistica(X, y, epocas, tasa, alpha)
+
+        if len(cfg) == 3:
+            epocas = int(cfg[0])
+            tasa = float(cfg[1])
+            alpha = float(cfg[2])
+            activacion = "sigmoid"
+
+        elif len(cfg) == 4:
+            epocas = int(cfg[0])
+            tasa = float(cfg[1])
+            alpha = float(cfg[2])
+            activacion = str(cfg[3])
+
+        else:
+            raise Exception("cfg debe ser [epocas, tasa, alpha] o [epocas, tasa, alpha, activacion]")
+
+        resultado = _prim_regresion_logistica(X, y, epocas, tasa, alpha, activacion)
         if resultado is None:
             return ("err", "Etiquetas y deben ser 0 o 1")
+
+        if len(cfg) == 4:
+            resultado.append(activacion)
+
         return ("ok", resultado)
 
     def _builtin_ml_logistic_prob(self, args):
         if len(args) != 2:
             raise Exception("prim_ml_logistic_prob() requiere modelo, x")
         modelo, x = args
-        if not isinstance(modelo, list) or len(modelo) != 5:
+        if not isinstance(modelo, list) or (len(modelo) != 5 and len(modelo) != 6):
             raise Exception("modelo debe ser un modelo logístico entrenado")
         return _prim_logistic_prob(modelo, x)
 
@@ -1979,8 +2013,32 @@ def _prim_sigmoid(z):
     """
     return 1.0 / (1.0 + _prim_exp(-z))
 
+def _prim_relu(z):
+    return max(0.0, z)
 
-def _prim_regresion_logistica(X, y, epocas, tasa, alpha):
+
+def _prim_tanh(z):
+    num = _prim_exp(z) - _prim_exp(-z)
+    den = _prim_exp(z) + _prim_exp(-z)
+    return num / den
+
+
+def _prim_activar(z, activacion):
+    if activacion == "sigmoid":
+        return _prim_sigmoid(z)
+
+    if activacion == "tanh":
+        return (_prim_tanh(z) + 1.0) / 2.0
+
+    if activacion == "relu":
+        r = _prim_relu(z)
+        if r > 1.0:
+            return 1.0
+        return r
+
+    return _prim_sigmoid(z)
+
+def _prim_regresion_logistica(X, y, epocas, tasa, alpha, activacion):
     """
     Regresión logística binaria por gradiente descendente.
 
@@ -2042,7 +2100,7 @@ def _prim_regresion_logistica(X, y, epocas, tasa, alpha):
             for j in range(n_feat):
                 z += X_norm[i][j] * w[j]
 
-            p = _prim_sigmoid(z)
+            p = _prim_activar(z, activacion)
             preds.append(p)
 
         # Binary Cross Entropy
@@ -2110,7 +2168,11 @@ def _prim_logistic_prob(modelo, x):
         x_norm = (x[j] - col_means[j]) / col_stds[j]
         z += x_norm * w[j]
 
-    return _prim_sigmoid(z)
+    activacion = "sigmoid"
+    if len(modelo) == 6:
+        activacion = modelo[5]
+
+    return _prim_activar(z, activacion)
 
 def _prim_perceptron_fit(X, y, epocas, tasa):
     """

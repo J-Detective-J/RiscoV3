@@ -1,16 +1,18 @@
-// ════════════════════════════════════════════════════════════════
-//  risco/visual.rc  —  Librería visual SVG configurable para RISCO
+// ============================================================
+// VISUAL.RC
+// Motor de visualización SVG offline para RiscoV3
 //
-//  Requisitos:
-//    - file.rc cargada (usa file_writePath)
-//    - cast texto(...) disponible
+// Características:
+// - gráficos de barras
+// - histogramas reales con bins
+// - líneas
+// - multilínea
+// - scatter
+// - sampling automático
+// - escalado dinámico
+// - exportación SVG offline
 //
-//  Enfoque:
-//    - genera archivos SVG reales
-//    - sin librerías externas
-//    - configurable desde el programa usuario
-//    - con ejes, títulos, etiquetas y escala visible en Y
-// ════════════════════════════════════════════════════════════════
+// ============================================================
 
 
 // ── Utilidades numéricas ───────────────────────────────────────
@@ -71,6 +73,8 @@ visual_title(title, width, title_color) =>
     return "<text x='" + texto(width / 2) + "' y='30' text-anchor='middle' fill='" + title_color + "' font-size='20'>" + title + "</text>"
 end
 
+// --------Ejes------------------
+
 visual_axes(margin_left, margin_top, plot_width, plot_height, axis_color) =>
     val x1 = margin_left
     val y1 = margin_top + plot_height
@@ -110,6 +114,174 @@ visual_y_ticks(maxv, margin_left, margin_top, plot_width, plot_height, grid_colo
     return visual_join(items)
 end
 
+//  Escalado-------------------------------
+
+visual_sample(values, max_points) =>
+    val n = long(values)
+
+    if n <= max_points:
+        return values
+    end
+
+    val paso = num(n / max_points)
+    var salida = []
+    var i = 0
+
+    while i < n:
+        salida = salida + [values[i]]
+        i = i + paso
+    end
+
+    return salida
+end
+
+visual_set(lista, pos, nuevo) =>
+    var salida = []
+    var i = 0
+
+    while i < long(lista):
+        if i == pos:
+            salida = salida + [nuevo]
+        else:
+            salida = salida + [lista[i]]
+        end
+        i = i + 1
+    end
+
+    return salida
+end
+
+// HISTOGRAMA----------------------------------------
+
+visual_hist_frecuencias(values, bins) =>
+    val minv = visual_min(values)
+    val maxv = visual_max(values)
+
+    var hist_freqs_local = []
+    var hist_i_local = 0
+
+    while hist_i_local < bins:
+        hist_freqs_local = hist_freqs_local + [0]
+        hist_i_local = hist_i_local + 1
+    end
+
+    if maxv == minv:
+        hist_freqs_local = visual_set(hist_freqs_local, 0, long(values))
+        return hist_freqs_local
+    end
+
+    val hist_bin_width_local = (maxv - minv) / bins
+
+    var hist_value_local = 0
+    var hist_diff_local = 0
+    var hist_pos_local = 0
+    var hist_idx_local = 0
+    var hist_current_freq_local = 0
+    var hist_new_freq_local = 0
+
+    hist_i_local = 0
+
+    while hist_i_local < long(values):
+        hist_value_local = values[hist_i_local]
+        hist_diff_local = hist_value_local - minv
+        hist_pos_local = hist_diff_local / hist_bin_width_local
+        hist_idx_local = num(hist_pos_local)
+
+        if hist_idx_local >= bins:
+            hist_idx_local = bins - 1
+        end
+
+        hist_current_freq_local = hist_freqs_local[hist_idx_local]
+        hist_new_freq_local = hist_current_freq_local + 1
+        hist_freqs_local = visual_set(hist_freqs_local, hist_idx_local, hist_new_freq_local)
+
+        hist_i_local = hist_i_local + 1
+    end
+
+    return hist_freqs_local
+end
+
+visual_hist_labels(values, bins) =>
+    val minv = visual_min(values)
+    val maxv = visual_max(values)
+    val ancho = (maxv - minv) / bins
+
+    var labels = []
+    var i = 0
+
+    var hist_ini_local = 0
+    var hist_fin_local = 0
+    var hist_label_local = ""
+
+    while i < bins:
+        hist_ini_local = minv + (i * ancho)
+        hist_fin_local = hist_ini_local + ancho
+        hist_label_local = visual_num_label(hist_ini_local) + "-" + visual_num_label(hist_fin_local)
+
+        labels = labels + [hist_label_local]
+
+        i = i + 1
+    end
+
+    return labels
+end
+visual_hist_bar_cfg(labels, values, title, xlabel, ylabel, width, height, bg_color, bar_color, axis_color, text_color, grid_color, path) =>
+    val n = long(values)
+    val margin_left = 70
+    val margin_top = 60
+    val margin_bottom = 80
+    val margin_right = 40
+    val plot_width = width - margin_left - margin_right
+    val plot_height = height - margin_top - margin_bottom
+    val maxv = visual_max(values)
+    val bar_width = plot_width / n
+
+    var items = []
+    var i = 0
+    var hist_v_bar = 0
+    var hist_h_bar = 0
+    var hist_x_bar = 0
+    var hist_y_bar = 0
+    var hist_rect_bar = ""
+    var hist_label_bar = ""
+    var hist_value_bar = ""
+
+    while i < n:
+        hist_v_bar = values[i]
+        hist_h_bar = (hist_v_bar / maxv) * plot_height
+        hist_x_bar = margin_left + (i * bar_width)
+        hist_y_bar = margin_top + (plot_height - hist_h_bar)
+
+        hist_rect_bar = "<rect x='" + texto(hist_x_bar) + "' y='" + texto(hist_y_bar) + "' width='" + texto(bar_width) + "' height='" + texto(hist_h_bar) + "' fill='" + bar_color + "' stroke='" + axis_color + "' stroke-width='1'/>"
+        hist_label_bar = "<text x='" + texto(hist_x_bar + (bar_width / 2)) + "' y='" + texto(margin_top + plot_height + 22) + "' text-anchor='middle' fill='" + text_color + "' font-size='10'>" + labels[i] + "</text>"
+        hist_value_bar = "<text x='" + texto(hist_x_bar + (bar_width / 2)) + "' y='" + texto(hist_y_bar - 8) + "' text-anchor='middle' fill='" + text_color + "' font-size='12'>" + texto(hist_v_bar) + "</text>"
+
+        items = items + [hist_rect_bar] + [hist_label_bar] + [hist_value_bar]
+        i = i + 1
+    end
+
+    val fondo = visual_svg_open(width, height, bg_color)
+    val titulo_svg = visual_title(title, width, text_color)
+    val ejes = visual_axes(margin_left, margin_top, plot_width, plot_height, axis_color)
+    val labels_axes = visual_axis_labels(xlabel, ylabel, width, height, margin_top, plot_height, text_color)
+    val ticks = visual_y_ticks(maxv, margin_left, margin_top, plot_width, plot_height, grid_color, text_color)
+    val contenido = fondo + titulo_svg + ticks + ejes + labels_axes + visual_join(items) + visual_svg_close()
+
+    file_writePath(path, contenido)
+end
+
+// ── Histograma real con bins ───────────────────────────────────
+// Convierte datos continuos en rangos y frecuencias.
+// A diferencia de visual_bar, aquí las barras representan intervalos.
+visual_hist(values, title, xlabel, ylabel, path) =>
+    return visual_hist_bins(values, 10, title, xlabel, ylabel, path)
+end
+
+visual_hist_bins(values, bins, title, xlabel, ylabel, path) =>
+    val hist_freqs_final = visual_hist_frecuencias(values, bins)
+    val hist_labels_final = visual_hist_labels(values, bins)
+    return visual_hist_bar_cfg(hist_labels_final, hist_freqs_final, title, xlabel, ylabel, 900, 550, "#111111", "#22c55e", "#ffffff", "#ffffff", "#333333", path)
+end
 
 // ── Gráfico de barras ──────────────────────────────────────────
 // Versión simple
@@ -172,50 +344,162 @@ end
 
 // Versión configurable
 visual_line_cfg(values, title, xlabel, ylabel, width, height, bg_color, line_color, axis_color, text_color, grid_color, path) =>
-    val n = long(values)
+    val datos = visual_sample(values, 400)
+    val n = long(datos)
+
     val margin_left = 70
     val margin_top = 60
     val margin_bottom = 70
     val margin_right = 40
     val plot_width = width - margin_left - margin_right
     val plot_height = height - margin_top - margin_bottom
-    val maxv = visual_max(values)
+    val maxv = visual_max(datos)
+    val minv = visual_min(datos)
 
     var points = []
-    var items = []
     var i = 0
     var x = 0
     var y = 0
     var p = ""
-    var circle = ""
-    var value_text = ""
-    var x_text = ""
 
     while i < n:
-        x = margin_left + ((i / (n - 1)) * plot_width)
-        y = margin_top + (plot_height - ((values[i] / maxv) * plot_height))
+        if n == 1:
+            x = margin_left + (plot_width / 2)
+        else:
+            x = margin_left + ((i / (n - 1)) * plot_width)
+        end
+
+        if maxv == minv:
+            y = margin_top + (plot_height / 2)
+        else:
+            y = margin_top + (plot_height - (((datos[i] - minv) / (maxv - minv)) * plot_height))
+        end
 
         p = texto(x) + "," + texto(y) + " "
-        circle = "<circle cx='" + texto(x) + "' cy='" + texto(y) + "' r='4' fill='" + line_color + "'/>"
-        value_text = "<text x='" + texto(x) + "' y='" + texto(y - 10) + "' text-anchor='middle' fill='" + text_color + "' font-size='12'>" + texto(values[i]) + "</text>"
-        x_text = "<text x='" + texto(x) + "' y='" + texto(margin_top + plot_height + 22) + "' text-anchor='middle' fill='" + text_color + "' font-size='12'>" + texto(i + 1) + "</text>"
-
         points = points + [p]
-        items = items + [circle] + [value_text] + [x_text]
         i = i + 1
     end
+    var x_ticks = []
+    var tick_i = 0
+    var tick_step = num(n / 5)
 
-    val poly = "<polyline points='" + visual_join(points) + "' fill='none' stroke='" + line_color + "' stroke-width='3'/>"
+    if tick_step < 1:
+        tick_step = 1
+    end
+
+    var tick_x = 0
+    var tick_text = ""
+
+    while tick_i < n:
+        tick_x = margin_left + ((tick_i / (n - 1)) * plot_width)
+        tick_text = "<text x='" + texto(tick_x) + "' y='" + texto(margin_top + plot_height + 22) + "' text-anchor='middle' fill='" + text_color + "' font-size='11'>" + texto(tick_i + 1) + "</text>"
+        x_ticks = x_ticks + [tick_text]
+        tick_i = tick_i + tick_step
+    end
+
+    val poly = "<polyline points='" + visual_join(points) + "' fill='none' stroke='" + line_color + "' stroke-width='2'/>"
     val fondo = visual_svg_open(width, height, bg_color)
     val titulo_svg = visual_title(title, width, text_color)
     val ejes = visual_axes(margin_left, margin_top, plot_width, plot_height, axis_color)
     val labels_axes = visual_axis_labels(xlabel, ylabel, width, height, margin_top, plot_height, text_color)
     val ticks = visual_y_ticks(maxv, margin_left, margin_top, plot_width, plot_height, grid_color, text_color)
-    val contenido = fondo + titulo_svg + ticks + ejes + labels_axes + poly + visual_join(items) + visual_svg_close()
+    val contenido = fondo + titulo_svg + ticks + ejes + labels_axes + poly + visual_join(x_ticks) + visual_svg_close()
+    file_writePath(path, contenido)
+end
+visual_multi_line(series, nombres, title, xlabel, ylabel, path) =>
+    return visual_multi_line_cfg(series, nombres, title, xlabel, ylabel, 900, 550, "#111111", "#ffffff", "#ffffff", "#333333", path)
+end
+
+// MULTILINEA ---------------------------------------
+
+visual_multi_line_cfg(series, nombres, title, xlabel, ylabel, width, height, bg_color, axis_color, text_color, grid_color, path) =>
+    val margin_left = 70
+    val margin_top = 60
+    val margin_bottom = 80
+    val margin_right = 140
+    val plot_width = width - margin_left - margin_right
+    val plot_height = height - margin_top - margin_bottom
+
+    val colores = ["#ef4444", "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#06b6d4"]
+
+    var global_max = visual_max(series[0])
+    var global_min = visual_min(series[0])
+
+    var s = 1
+    while s < long(series):
+        if visual_max(series[s]) > global_max:
+            global_max = visual_max(series[s])
+        end
+        if visual_min(series[s]) < global_min:
+            global_min = visual_min(series[s])
+        end
+        s = s + 1
+    end
+
+    var items = []
+    var legend = []
+
+    var ml_datos = []
+    var ml_n = 0
+    var ml_color = ""
+    var ml_points = []
+    var ml_i = 0
+    var ml_x = 0
+    var ml_y = 0
+    var ml_p = ""
+    var ml_poly = ""
+    var ml_ly = 0
+    var ml_box = ""
+    var ml_txt = ""
+
+    s = 0
+
+    while s < long(series):
+        ml_datos = visual_sample(series[s], 400)
+        ml_n = long(ml_datos)
+        ml_color = colores[s % long(colores)]
+
+        ml_points = []
+        ml_i = 0
+
+        while ml_i < ml_n:
+            if ml_n == 1:
+                ml_x = margin_left + (plot_width / 2)
+            else:
+                ml_x = margin_left + ((ml_i / (ml_n - 1)) * plot_width)
+            end
+
+            if global_max == global_min:
+                ml_y = margin_top + (plot_height / 2)
+            else:
+                ml_y = margin_top + (plot_height - (((ml_datos[ml_i] - global_min) / (global_max - global_min)) * plot_height))
+            end
+
+            ml_p = texto(ml_x) + "," + texto(ml_y) + " "
+            ml_points = ml_points + [ml_p]
+            ml_i = ml_i + 1
+        end
+
+        ml_poly = "<polyline points='" + visual_join(ml_points) + "' fill='none' stroke='" + ml_color + "' stroke-width='2'/>"
+        items = items + [ml_poly]
+
+        ml_ly = margin_top + (s * 24)
+        ml_box = "<rect x='" + texto(width - 120) + "' y='" + texto(ml_ly) + "' width='14' height='14' fill='" + ml_color + "'/>"
+        ml_txt = "<text x='" + texto(width - 100) + "' y='" + texto(ml_ly + 12) + "' fill='" + text_color + "' font-size='12'>" + nombres[s] + "</text>"
+        legend = legend + [ml_box] + [ml_txt]
+
+        s = s + 1
+    end
+
+    val fondo = visual_svg_open(width, height, bg_color)
+    val titulo_svg = visual_title(title, width, text_color)
+    val ejes = visual_axes(margin_left, margin_top, plot_width, plot_height, axis_color)
+    val labels_axes = visual_axis_labels(xlabel, ylabel, width, height, margin_top, plot_height, text_color)
+    val ticks = visual_y_ticks(global_max, margin_left, margin_top, plot_width, plot_height, grid_color, text_color)
+    val contenido = fondo + titulo_svg + ticks + ejes + labels_axes + visual_join(items) + visual_join(legend) + visual_svg_close()
 
     file_writePath(path, contenido)
 end
-
 
 // ── Gráfico de dispersión ──────────────────────────────────────
 // Versión simple
@@ -275,54 +559,3 @@ visual_scatter_cfg(xs, ys, title, xlabel, ylabel, width, height, bg_color, point
 end
 
 
-// ── Histograma simple ──────────────────────────────────────────
-// Versión simple
-visual_hist(values, title, xlabel, ylabel, path) =>
-    return visual_hist_cfg(values, title, xlabel, ylabel, 800, 500, "#111111", "#22c55e", "#ffffff", "#ffffff", "#333333", path)
-end
-
-// Versión configurable
-visual_hist_cfg(values, title, xlabel, ylabel, width, height, bg_color, bar_color, axis_color, text_color, grid_color, path) =>
-    val n = long(values)
-    val margin_left = 70
-    val margin_top = 60
-    val margin_bottom = 70
-    val margin_right = 40
-    val plot_width = width - margin_left - margin_right
-    val plot_height = height - margin_top - margin_bottom
-    val maxv = visual_max(values)
-    val bar_width = plot_width / n
-
-    var items = []
-    var i = 0
-    var v = 0
-    var h = 0
-    var x = 0
-    var y = 0
-    var rect = ""
-    var value_text = ""
-    var bin_text = ""
-
-    while i < n:
-        v = values[i]
-        h = (v / maxv) * plot_height
-        x = margin_left + (i * bar_width)
-        y = margin_top + (plot_height - h)
-
-        rect = "<rect x='" + texto(x) + "' y='" + texto(y) + "' width='" + texto(bar_width - 4) + "' height='" + texto(h) + "' fill='" + bar_color + "'/>"
-        value_text = "<text x='" + texto(x + ((bar_width - 4) / 2)) + "' y='" + texto(y - 8) + "' text-anchor='middle' fill='" + text_color + "' font-size='12'>" + texto(v) + "</text>"
-        bin_text = "<text x='" + texto(x + ((bar_width - 4) / 2)) + "' y='" + texto(margin_top + plot_height + 22) + "' text-anchor='middle' fill='" + text_color + "' font-size='12'>B" + texto(i + 1) + "</text>"
-
-        items = items + [rect] + [value_text] + [bin_text]
-        i = i + 1
-    end
-
-    val fondo = visual_svg_open(width, height, bg_color)
-    val titulo_svg = visual_title(title, width, text_color)
-    val ejes = visual_axes(margin_left, margin_top, plot_width, plot_height, axis_color)
-    val labels_axes = visual_axis_labels(xlabel, ylabel, width, height, margin_top, plot_height, text_color)
-    val ticks = visual_y_ticks(maxv, margin_left, margin_top, plot_width, plot_height, grid_color, text_color)
-    val contenido = fondo + titulo_svg + ticks + ejes + labels_axes + visual_join(items) + visual_svg_close()
-
-    file_writePath(path, contenido)
-end

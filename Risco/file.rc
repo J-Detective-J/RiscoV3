@@ -146,3 +146,62 @@ file_readCSV(path) =>
     end
     return map(lines, (line) => split(line, ","))
 end
+csv_to_numeric(tabla) =>
+    var salida = []
+    var i = 0
+
+    while i < long(tabla):
+        var fila = tabla[i]
+        var nueva_fila = []
+        var j = 0
+
+        while j < long(fila):
+            nueva_fila = nueva_fila + [decimal(fila[j])]
+            j = j + 1
+        end
+
+        salida = salida + [nueva_fila]
+        i = i + 1
+    end
+
+    return salida
+end
+csv_sin_header(tabla) =>
+    var salida = []
+    var i = 1
+
+    while i < long(tabla):
+        salida = salida + [tabla[i]]
+        i = i + 1
+    end
+
+    return salida
+end
+
+csv_col_decimal(tabla, col) =>
+    var salida = []
+    var i = 1
+
+    while i < long(tabla):
+        if long(tabla[i]) > col:
+            salida = salida + [decimal(tabla[i][col])]
+        end
+        i = i + 1
+    end
+
+    return salida
+end
+
+csv_col_num(tabla, col) =>
+    var salida = []
+    var i = 1
+
+    while i < long(tabla):
+        if long(tabla[i]) > col:
+            salida = salida + [num(tabla[i][col])]
+        end
+        i = i + 1
+    end
+
+    return salida
+end

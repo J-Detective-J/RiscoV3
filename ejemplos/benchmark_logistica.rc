@@ -1,0 +1,68 @@
+print("BENCHMARK REGRESION LOGISTICA")
+
+val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
+
+val etiquetas = [0,0,0,0,1,1,1,1]
+
+val X = map(horas, (x) => [x])
+
+val activaciones = ["sigmoid", "tanh", "relu"]
+
+var nombres = []
+var perdidas = []
+var probabilidades = []
+var clases = []
+
+var i = 0
+
+var bench_act = ""
+var bench_cfg = null
+var bench_modelo = null
+var bench_hist = []
+var bench_prob = 0
+var bench_clase = 0
+
+while i < long(activaciones):
+
+    bench_act = activaciones[i]
+
+    bench_cfg = ai_config_activacion(100, 0.3, 0.0, bench_act)
+
+    bench_modelo = unwrap(ml_logistic_ajustar(X, etiquetas, bench_cfg), null)
+
+    bench_hist = ml_historial(bench_modelo)
+
+    bench_prob = ml_logistic_prob(bench_modelo, [7.0])
+
+    bench_clase = ml_logistic_clasificar(bench_modelo, [7.0])
+
+    nombres = nombres + [bench_act]
+
+    perdidas = perdidas + [bench_hist]
+
+    probabilidades = probabilidades + [bench_prob]
+
+    clases = clases + [bench_clase]
+
+    print("Activacion:")
+    print(bench_act)
+
+    print("Probabilidad 7 horas:")
+    print(bench_prob)
+
+    print("Clase:")
+    print(bench_clase)
+
+    print("Loss final:")
+    print(bench_hist[long(bench_hist)-1])
+
+    i = i + 1
+end
+
+visual_multi_line(perdidas, nombres, "Comparacion de perdida por activacion", "Epocas", "Loss", "benchmark_loss.svg")
+
+visual_bar(nombres, probabilidades, "Probabilidad para 7 horas", "Activacion", "Probabilidad", "benchmark_prob.svg")
+
+print("Graficas generadas:")
+print("benchmark_loss.svg")
+print("benchmark_prob.svg")

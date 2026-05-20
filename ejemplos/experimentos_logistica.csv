@@ -1,0 +1,7 @@
+activacion,epocas,tasa,alpha
+sigmoid,100,0.3,0.0
+tanh,100,0.3,0.0
+relu,100,0.3,0.0
+sigmoid,200,0.3,0.0
+tanh,200,0.3,0.0
+relu,200,0.3,0.0

@@ -1,0 +1,73 @@
+print("BENCHMARK LOGISTICA DESDE CSV")
+
+val tabla = file_readCSV("ejemplos/experimentos_logistica.csv")
+
+val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
+val etiquetas = [0,0,0,0,1,1,1,1]
+val X = map(horas, (x) => [x])
+
+var nombres = []
+var losses_finales = []
+var probabilidades = []
+
+var i = 1
+
+var fila = []
+var act = ""
+var epocas = 0
+var tasa = 0.0
+var alpha = 0.0
+
+var cfg = null
+var modelo = null
+var hist = []
+var loss_final = 0.0
+var prob = 0.0
+
+while i < long(tabla):
+
+    fila = tabla[i]
+
+    act = fila[0]
+
+    epocas = num(fila[1])
+
+    tasa = decimal(fila[2])
+
+    alpha = decimal(fila[3])
+
+    cfg = ai_config_activacion(epocas, tasa, alpha, act)
+
+    modelo = unwrap(ml_logistic_ajustar(X, etiquetas, cfg), null)
+
+    hist = ml_historial(modelo)
+
+    loss_final = hist[long(hist)-1]
+
+    prob = ml_logistic_prob(modelo, [7.0])
+
+    nombres = nombres + [act + "-" + texto(epocas)]
+
+    losses_finales = losses_finales + [loss_final]
+
+    probabilidades = probabilidades + [prob]
+
+    print("Configuracion:")
+    print(act + " ep=" + texto(epocas))
+
+    print("Loss final:")
+    print(loss_final)
+
+    print("Probabilidad:")
+    print(prob)
+
+    print("----------------")
+
+    i = i + 1
+end
+
+visual_bar(nombres, losses_finales, "Loss final por configuracion", "Configuracion", "Loss", "benchmark_csv_loss.svg")
+
+visual_bar(nombres, probabilidades, "Probabilidad para 7 horas", "Configuracion", "Probabilidad", "benchmark_csv_prob.svg")
+
+print("Graficas generadas")

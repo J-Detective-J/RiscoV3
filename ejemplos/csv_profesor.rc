@@ -1,0 +1,31 @@
+print("CSV REAL DEL PROFESOR")
+
+val tabla = file_readCSV("ejemplos/data_limpia.csv")
+
+print("Filas leidas:")
+print(long(tabla))
+
+print("Encabezado:")
+print(tabla[0])
+
+val edades = csv_col_decimal(tabla, 1)
+val ingresos = csv_col_decimal(tabla, 3)
+val escolaridad = csv_col_decimal(tabla, 5)
+
+print("Cantidad edades:")
+print(long(edades))
+
+print("Primera edad:")
+print(edades[0])
+
+print("Primer ingreso:")
+print(ingresos[0])
+
+print("Primer anio escolaridad:")
+print(escolaridad[0])
+
+visual_hist_bins(edades, 10, "Histograma de edades", "Edad", "Frecuencia", "hist_edades.svg")
+visual_hist_bins(ingresos, 10, "Histograma de ingresos", "Ingreso mensual", "Frecuencia", "hist_ingresos.svg")
+visual_line(ingresos, "Ingresos muestreados", "Registro", "Ingreso mensual", "line_ingresos.svg")
+
+print("Graficas generadas")

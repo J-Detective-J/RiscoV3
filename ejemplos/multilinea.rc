@@ -1,0 +1,9 @@
+print("MULTI LINE")
+
+val loss_sigmoid = [0.69,0.63,0.59,0.55,0.51,0.48,0.45,0.43]
+val loss_tanh = [0.69,0.60,0.52,0.44,0.37,0.31,0.28,0.25]
+val loss_relu = [0.69,0.62,0.57,0.50,0.45,0.42,0.40,0.39]
+
+visual_multi_line([loss_sigmoid, loss_tanh, loss_relu], ["sigmoid", "tanh", "relu"], "Comparacion de perdida", "Epocas", "Loss", "multi_loss.svg")
+
+print("Grafica generada: multi_loss.svg")

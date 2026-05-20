@@ -1,0 +1,10 @@
+print("SIGMOID")
+
+print(prim_sigmoid(0))
+print(prim_sigmoid(2))
+print(prim_sigmoid(-2))
+
+print("DERIVADA")
+
+print(prim_sigmoid_deriv(0))
+print(prim_sigmoid_deriv(2))

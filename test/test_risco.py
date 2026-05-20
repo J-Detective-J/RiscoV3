@@ -1340,3 +1340,28 @@ def test_derivadas_activacion():
         'print(prim_tanh_deriv(0.0))\n'
     )
     assert ejecutar(codigo) == ["1.0", "0.0", "1.0"]
+def test_sigmoid_basico():
+    codigo = (
+        'print(prim_sigmoid(0.0))\n'
+        'print(prim_sigmoid_deriv(0.0))\n'
+    )
+    resultado = ejecutar(codigo)
+    assert abs(float(resultado[0]) - 0.5) < 1e-9
+    assert abs(float(resultado[1]) - 0.25) < 1e-9
+
+
+def test_ml_logistic_config_activacion_sigmoid():
+    codigo = (
+        'val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]\n'
+        'val y = [0,0,0,0,1,1,1,1]\n'
+        'val X = map(horas, (x) => [x])\n'
+        'val cfg = ai_config_activacion(100, 0.3, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(ml_logistic_ajustar(X, y, cfg), null)\n'
+        'print(long(modelo))\n'
+        'print(modelo[5])\n'
+        'print(ml_logistic_prob(modelo, [7.0]))\n'
+    )
+    resultado = ejecutar(codigo)
+    assert resultado[0] == "6"
+    assert resultado[1] == "sigmoid"
+    assert float(resultado[2]) > 0.8

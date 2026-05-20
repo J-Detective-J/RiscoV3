@@ -10,7 +10,7 @@ val aprueba = [0, 0, 0, 0, 1, 1, 1, 1]
 val X = map(horas, (x) => [x])
 
 // Configuración: epocas, tasa aprendizaje, alpha
-val cfg = ai.config(100, 0.3, 0.0)
+val cfg = ai_config_activacion(100, 0.3, 0.0, "sigmoid")
 
 // Entrenar modelo
 val modelo = unwrap(ml_logistic_ajustar(X, aprueba, cfg), null)

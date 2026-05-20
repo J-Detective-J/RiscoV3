@@ -1,0 +1,9 @@
+print("HISTOGRAMA REAL Y LINEA OPTIMIZADA")
+
+val datos = [4.0,7.0,10.0,8.0,12.0,13.0,9.0,6.0,5.0,11.0,20.0,22.0,21.0,19.0,30.0,31.0,32.0]
+
+visual_hist_bins(datos, 5, "Histograma real con bins", "Rangos", "Frecuencia", "hist_real.svg")
+
+visual_line(datos, "Linea optimizada", "Indice", "Valor", "line_optimizada.svg")
+
+print("Listo")

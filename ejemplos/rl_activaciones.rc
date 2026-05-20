@@ -1,0 +1,23 @@
+print("COMPARACION DE ACTIVACIONES EN LOGISTICA")
+
+val horas = [1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0]
+val y = [0,0,0,0,1,1,1,1]
+val X = map(horas, (x) => [x])
+
+val cfg_sigmoid = ai_config_activacion(100, 0.3, 0.0, "sigmoid")
+val mod_sigmoid = unwrap(ml_logistic_ajustar(X, y, cfg_sigmoid), null)
+
+val cfg_tanh = ai_config_activacion(100, 0.3, 0.0, "tanh")
+val mod_tanh = unwrap(ml_logistic_ajustar(X, y, cfg_tanh), null)
+
+val cfg_relu = ai_config_activacion(100, 0.3, 0.0, "relu")
+val mod_relu = unwrap(ml_logistic_ajustar(X, y, cfg_relu), null)
+
+print("Probabilidad 7 horas sigmoid:")
+print(ml_logistic_prob(mod_sigmoid, [7.0]))
+
+print("Probabilidad 7 horas tanh:")
+print(ml_logistic_prob(mod_tanh, [7.0]))
+
+print("Probabilidad 7 horas relu:")
+print(ml_logistic_prob(mod_relu, [7.0]))
