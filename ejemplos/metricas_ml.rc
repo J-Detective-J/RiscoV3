@@ -1,0 +1,13 @@
+
+val y_real = [1.0, 0.0, 1.0, 1.0]
+val y_pred = [1.0, 0.0, 0.0, 1.0]
+
+print(metricas_recall(y_real, y_pred))
+print(metricas_f1(y_real, y_pred))
+
+val real_reg = [3.0, 5.0, 7.0]
+val pred_reg = [2.0, 5.0, 10.0]
+
+print(metricas_mae(real_reg, pred_reg))
+print(metricas_mse(real_reg, pred_reg))
+print(metricas_rmse(real_reg, pred_reg))

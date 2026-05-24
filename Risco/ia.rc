@@ -63,3 +63,13 @@ metricas_precision(y_real, y_pred) => prim_precision(y_real, y_pred)
 
 /// metricas.confusion(y_real, y_pred) → [[Num]]
 metricas_confusion(y_real, y_pred) => prim_confusion_matrix(y_real, y_pred)
+
+ml_knn_ajustar(X, y, k, tipo, metrica) => prim_ml_knn_ajustar(X, y, k, tipo, metrica)
+
+ml_knn_predecir(modelo, muestra) => prim_ml_knn_predecir(modelo, muestra)
+
+metricas_recall(y_real, y_pred) => prim_recall(y_real, y_pred)
+metricas_f1(y_real, y_pred) => prim_f1(y_real, y_pred)
+metricas_mae(y_real, y_pred) => prim_mae(y_real, y_pred)
+metricas_mse(y_real, y_pred) => prim_mse(y_real, y_pred)
+metricas_rmse(y_real, y_pred) => prim_rmse(y_real, y_pred)

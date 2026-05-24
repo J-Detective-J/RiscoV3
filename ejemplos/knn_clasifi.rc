@@ -1,7 +1,7 @@
 val X = [[1.0, 1.0], [2.0, 2.0], [8.0, 8.0]]
 val y = [0.0, 0.0, 1.0]
 
-val modelo = prim_ml_knn_ajustar(X, y, 1, "clasificacion", "euclidiana")
-val pred = prim_ml_knn_predecir(modelo, [1.5, 1.5])
+val modelo = ml_knn_ajustar(X, y, 1, "clasificacion", "euclidiana")
+val pred = ml_knn_predecir(modelo, [1.5, 1.5])
 
 print(pred)

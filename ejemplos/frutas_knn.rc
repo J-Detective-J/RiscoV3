@@ -8,13 +8,13 @@ val y = [0.0, 0.0, 1.0, 1.0]
 
 // 3. Configuramos y guardamos nuestro modelo KNN
 // Usamos K = 3 (evaluará a los 3 vecinos más cercanos para votar)
-val modelo = prim_ml_knn_ajustar(X, y, 3, "clasificacion", "euclidiana")
+val modelo = ml_knn_ajustar(X, y, 3, "clasificacion", "euclidiana")
 
 // 4. Traemos una fruta nueva misteriosa de la que no sabemos el tipo
 val fruta_misteriosa = [175.0, 7.5]
 
 // 5. El algoritmo calcula las distancias y predice a qué grupo pertenece
-val prediccion = prim_ml_knn_predecir(modelo, fruta_misteriosa)
+val prediccion = ml_knn_predecir(modelo, fruta_misteriosa)
 
 print("Resultado numerico de la prediccion:")
 print(prediccion)

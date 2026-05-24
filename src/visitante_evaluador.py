@@ -1115,6 +1115,11 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_accuracy':          self._builtin_prim_accuracy,
             'prim_precision':         self._builtin_prim_precision,
             'prim_confusion_matrix':  self._builtin_prim_confusion_matrix,
+            'prim_recall':            self._builtin_prim_recall,
+            'prim_f1':                self._builtin_prim_f1,
+            'prim_mae':               self._builtin_prim_mae,
+            'prim_mse':               self._builtin_prim_mse,
+            'prim_rmse':              self._builtin_prim_rmse,
             'prim_relu':              self._builtin_relu,
             'prim_tanh':              self._builtin_tanh,
             'prim_relu_deriv':        self._builtin_relu_deriv,
@@ -2010,6 +2015,37 @@ class VisitanteEvaluador(RISCOVisitor):
             raise Exception("prim_confusion_matrix() requiere 2 argumentos")
         y_real, y_pred = args
         return _prim_confusion_matrix(y_real, y_pred)
+    
+
+    def _builtin_prim_recall(self, args):
+        if len(args) != 2:
+            raise Exception("prim_recall() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_recall(y_real, y_pred)
+
+    def _builtin_prim_f1(self, args):
+        if len(args) != 2:
+            raise Exception("prim_f1() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_f1(y_real, y_pred)
+
+    def _builtin_prim_mae(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mae() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_mae(y_real, y_pred)
+
+    def _builtin_prim_mse(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mse() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_mse(y_real, y_pred)
+
+    def _builtin_prim_rmse(self, args):
+        if len(args) != 2:
+            raise Exception("prim_rmse() requiere 2 argumentos")
+        y_real, y_pred = args
+        return _prim_rmse(y_real, y_pred)
 
 #ML 
 #REGRESION LINEAL
@@ -2321,3 +2357,30 @@ def _prim_confusion_matrix(y_real, y_pred):
     fn = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 0.0)
     vp = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 1.0)
     return [[vn, fp], [fn, vp]]
+def _prim_recall(y_real, y_pred):
+    """Recall para clasificación binaria (clase positiva = 1.0)"""
+    vp = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 1.0)
+    fn = sum(1 for a, b in zip(y_real, y_pred) if a == 1.0 and b == 0.0)
+    return vp / (vp + fn) if (vp + fn) > 0 else 0.0
+
+def _prim_f1(y_real, y_pred):
+    """F1-score para clasificación binaria"""
+    precision = _prim_precision(y_real, y_pred)
+    recall = _prim_recall(y_real, y_pred)
+    return 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+
+def _prim_mae(y_real, y_pred):
+    """Error absoluto medio"""
+    if len(y_real) != len(y_pred) or len(y_real) == 0:
+        return 0.0
+    return sum(abs(float(a) - float(b)) for a, b in zip(y_real, y_pred)) / len(y_real)
+
+def _prim_mse(y_real, y_pred):
+    """Error cuadrático medio"""
+    if len(y_real) != len(y_pred) or len(y_real) == 0:
+        return 0.0
+    return sum((float(a) - float(b)) ** 2 for a, b in zip(y_real, y_pred)) / len(y_real)
+
+def _prim_rmse(y_real, y_pred):
+    """Raíz del error cuadrático medio"""
+    return _prim_mse(y_real, y_pred) ** 0.5
