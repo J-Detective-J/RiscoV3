@@ -1108,6 +1108,8 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_ml_r2':             self._builtin_ml_r2,
             'prim_ml_ajustar_logistico': self._builtin_ml_ajustar_logistico,
             'prim_ml_logistic_prob':     self._builtin_ml_logistic_prob,
+            "prim_ml_knn_ajustar": self._builtin_ml_knn_ajustar,
+            "prim_ml_knn_predecir": self._builtin_ml_knn_predecir,
             'prim_perceptron_fit':     self._builtin_perceptron_fit,
             'prim_perceptron_predict': self._builtin_perceptron_predict,
             'prim_accuracy':          self._builtin_prim_accuracy,
@@ -1396,6 +1398,87 @@ class VisitanteEvaluador(RISCOVisitor):
         s = _prim_sigmoid(x)
         return s * (1.0 - s)
     
+    def _distancia_euclidiana(self, a, b):
+        return sum((float(x) - float(y)) ** 2 for x, y in zip(a, b)) ** 0.5
+
+    def _distancia_manhattan(self, a, b):
+        return sum(abs(float(x) - float(y)) for x, y in zip(a, b))
+
+    def _distancia_knn(self, a, b, metrica):
+        if metrica == "euclidiana":
+            return self._distancia_euclidiana(a, b)
+        if metrica == "manhattan":
+            return self._distancia_manhattan(a, b)
+        raise Exception("Métrica KNN no soportada: " + str(metrica))
+
+    def _builtin_ml_knn_ajustar(self, args):
+        # Desempaquetado seguro por si RISCO mete los parámetros en una sublista
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            parametros = args[0]
+        else:
+            parametros = args
+
+        X = parametros[0]
+        y = parametros[1]
+    
+        # Valores por defecto
+        k = 3
+        tipo = "clasificacion"
+        metrica = "euclidiana"
+    
+        if len(parametros) > 2:
+            k = int(parametros[2])
+        if len(parametros) > 3:
+            tipo = parametros[3]
+        if len(parametros) > 4:
+            metrica = parametros[4]
+        
+        return {
+            "tipo_modelo": "knn",
+            "X": X,
+            "y": y,
+            "k": k,
+            "tipo": tipo,
+            "metrica": metrica
+        }
+
+    def _builtin_ml_knn_predecir(self, args):
+        # Desempaquetado seguro para la predicción
+        if len(args) == 1 and isinstance(args[0], (list, tuple)):
+            parametros = args[0]
+        else:
+            parametros = args
+
+        modelo = parametros[0]
+        muestra = parametros[1]
+    
+        X = modelo["X"]
+        y = modelo["y"]
+        k = modelo["k"]
+        tipo = modelo["tipo"]
+        metrica = modelo["metrica"]
+    
+        distancias = []
+        for i in range(len(X)):
+            distancia = self._distancia_knn(muestra, X[i], metrica)
+            distancias.append((distancia, y[i]))
+        
+        distancias.sort(key=lambda x: x[0])
+        vecinos = distancias[:k]
+        etiquetas = [v[1] for v in vecinos]
+    
+        if tipo == "clasificacion":
+            conteo = {}
+            for etiqueta in etiquetas:
+                conteo[etiqueta] = conteo.get(etiqueta, 0) + 1
+            return max(conteo, key=conteo.get)
+        
+        if tipo == "regresion":
+            return sum(float(v) for v in etiquetas) / len(etiquetas)
+        
+        raise Exception("Tipo KNN no soportado")
+
+
     # ── Primitivas mat ────────────────────────────────────────
     def _builtin_ml_ajustar_lineal(self, args):
         if len(args) != 3:

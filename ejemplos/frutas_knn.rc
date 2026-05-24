@@ -1,0 +1,26 @@
+// 1. Datos de entrenamiento (X)
+// Cada elemento es: [Peso_en_gramos, Rugosidad_de_la_piel]
+// Las dos primeras filas son Naranjas (pesadas y rugosas) Las dos últimas son Manzanas (livianas y lisas).
+val X = [[180.0, 8.0], [190.0, 9.0], [120.0, 2.0], [130.0, 1.0]]
+
+// 0.0 significa Naranja | 1.0 significa Manzana
+val y = [0.0, 0.0, 1.0, 1.0]
+
+// 3. Configuramos y guardamos nuestro modelo KNN
+// Usamos K = 3 (evaluará a los 3 vecinos más cercanos para votar)
+val modelo = prim_ml_knn_ajustar(X, y, 3, "clasificacion", "euclidiana")
+
+// 4. Traemos una fruta nueva misteriosa de la que no sabemos el tipo
+val fruta_misteriosa = [175.0, 7.5]
+
+// 5. El algoritmo calcula las distancias y predice a qué grupo pertenece
+val prediccion = prim_ml_knn_predecir(modelo, fruta_misteriosa)
+
+print("Resultado numerico de la prediccion:")
+print(prediccion)
+
+if prediccion == 0.0:
+    print("La fruta misteriosa es una: NARANJA")
+else:
+    print("La fruta misteriosa es una: MANZANA")
+end

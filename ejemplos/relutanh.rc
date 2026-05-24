@@ -1,0 +1,12 @@
+val entrada_relu = 4.5
+val resultado_relu = prim_relu(entrada_relu)
+
+print("Entrada ReLU:")
+print(resultado_relu)
+
+
+val entrada_tanh = 3
+val resultado_tanh = prim_tanh(entrada_tanh)
+
+print("Entrada Tanh:")
+print(resultado_tanh) 
