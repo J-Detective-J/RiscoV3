@@ -4,10 +4,14 @@
 # Python
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Entornos virtuales
 venv/
 .env/
+.venv/
+env/
+conda-env/
 
 # VSCode
 .vscode/
