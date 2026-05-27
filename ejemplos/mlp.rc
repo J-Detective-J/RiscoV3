@@ -1,0 +1,9 @@
+// Clasificación XOR (imposible para perceptrón simple, posible para MLP)
+val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]
+val y = [0, 1, 1, 0]
+
+val cfg = mlp_config([4, 4], 1000, 0.1, 0.001, "sigmoid", "clasificacion")
+val modelo = unwrap(mlp_ajustar(X, y, cfg), null)
+
+print(mlp_clasificar(modelo, [0.0, 0.0]))   // → 0
+print(mlp_clasificar(modelo, [1.0, 0.0]))   // → 1

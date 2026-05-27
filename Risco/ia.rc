@@ -45,13 +45,51 @@ ml_logistic_clasificar(modelo, x) =>
     return 0
 end
 
+ml_knn_ajustar(X, y, k, tipo, metrica) => prim_ml_knn_ajustar(X, y, k, tipo, metrica)
+
+ml_knn_predecir(modelo, muestra) => prim_ml_knn_predecir(modelo, muestra)
+
 // ── GRUPO 2: Deep Learning ──────────────────────────────────────
 
 /// perceptron.ajustar(X, y, cfg) → [pesos, bias, historial]
-perceptron_ajustar(X, y, cfg) => prim_perceptron_fit(X, y, cfg[0], cfg[1])
+perceptron_ajustar(X, y, cfg) =>
+    if long(cfg) == 4:
+        return prim_perceptron_fit(X, y, cfg[0], cfg[1], cfg[3])
+    end
+    return prim_perceptron_fit(X, y, cfg[0], cfg[1])
+end
 
 /// perceptron.predecir(modelo, X) → [Decimal]
 perceptron_predecir(modelo, X) => prim_perceptron_predict(modelo[0], modelo[1], X)
+
+/// mlp.config(capas, epocas, tasa, alpha, activacion, tipo) → Config
+/// capas: lista de neuronas por capa oculta, ej. [4, 4]
+/// activacion: "sigmoid", "tanh", "relu"
+/// tipo: "clasificacion" o "regresion"
+mlp_config(capas, epocas, tasa, alpha, activacion, tipo) =>
+    return [capas, epocas, tasa, alpha, activacion, tipo]
+end
+
+/// mlp.ajustar(X, y, cfg) → Result<modelo>
+mlp_ajustar(X, y, cfg) =>
+    return prim_mlp_fit(X, y, cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5])
+end
+
+/// mlp.prob(modelo, x) → Decimal   (clasificación: prob de clase 1)
+mlp_prob(modelo, x) => prim_mlp_predict_prob(modelo, x)
+
+/// mlp.clasificar(modelo, x) → Num  (0 o 1)
+mlp_clasificar(modelo, x) => prim_mlp_predict_clase(modelo, x)
+
+/// mlp.predecir_batch(modelo, X) → [Decimal]
+/// Para clasificación retorna lista de 0.0/1.0, para regresión valores continuos
+mlp_predecir_batch(modelo, X) => prim_mlp_predict_batch(modelo, X)
+
+/// mlp.predecir(modelo, x) → Decimal  (regresión)
+mlp_predecir(modelo, x) => prim_mlp_predict_regression(modelo, x)
+
+/// mlp.historial(modelo) → [Decimal]
+mlp_historial(modelo) => modelo[2]
 
 // ── Métricas ──────────────────────────────────────────────────
 
@@ -64,9 +102,6 @@ metricas_precision(y_real, y_pred) => prim_precision(y_real, y_pred)
 /// metricas.confusion(y_real, y_pred) → [[Num]]
 metricas_confusion(y_real, y_pred) => prim_confusion_matrix(y_real, y_pred)
 
-ml_knn_ajustar(X, y, k, tipo, metrica) => prim_ml_knn_ajustar(X, y, k, tipo, metrica)
-
-ml_knn_predecir(modelo, muestra) => prim_ml_knn_predecir(modelo, muestra)
 
 metricas_recall(y_real, y_pred) => prim_recall(y_real, y_pred)
 metricas_f1(y_real, y_pred) => prim_f1(y_real, y_pred)

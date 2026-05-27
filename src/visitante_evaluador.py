@@ -1126,6 +1126,11 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_tanh_deriv':        self._builtin_tanh_deriv,
             'prim_sigmoid': self._builtin_sigmoid,
             'prim_sigmoid_deriv': self._builtin_sigmoid_deriv,
+            'prim_mlp_fit':              self._builtin_mlp_fit,
+            'prim_mlp_predict_prob':     self._builtin_mlp_predict_prob,
+            'prim_mlp_predict_clase':    self._builtin_mlp_predict_clase,
+            'prim_mlp_predict_batch':    self._builtin_mlp_predict_batch,
+            'prim_mlp_predict_regression': self._builtin_mlp_predict_regression,
              # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
@@ -1512,6 +1517,33 @@ class VisitanteEvaluador(RISCOVisitor):
         if len(y_real) != len(y_pred):
             raise Exception("prim_ml_r2(): los vectores deben tener la misma longitud")
         return _prim_r2_score(y_real, y_pred)
+
+    def _builtin_mlp_fit(self, args):
+        if len(args) != 8:
+            raise Exception("prim_mlp_fit() requiere X, y, capas, epocas, tasa, alpha, activacion, tipo")
+        X, y, capas, epocas, tasa, alpha, activacion, tipo = args
+        resultado = _prim_mlp_fit(X, y, capas, int(epocas), float(tasa), float(alpha), str(activacion), str(tipo))
+        return ("ok", resultado)
+
+    def _builtin_mlp_predict_prob(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mlp_predict_prob() requiere modelo, x")
+        return _prim_mlp_predict_prob(args[0], args[1])
+
+    def _builtin_mlp_predict_clase(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mlp_predict_clase() requiere modelo, x")
+        return float(_prim_mlp_predict_clase(args[0], args[1]))
+
+    def _builtin_mlp_predict_batch(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mlp_predict_batch() requiere modelo, X")
+        return _prim_mlp_predict_batch(args[0], args[1])
+
+    def _builtin_mlp_predict_regression(self, args):
+        if len(args) != 2:
+            raise Exception("prim_mlp_predict_regression() requiere modelo, x")
+        return _prim_mlp_predict_regression(args[0], args[1])
     
     def _builtin_mat_sqrt(self, args):
         """
@@ -1987,10 +2019,11 @@ class VisitanteEvaluador(RISCOVisitor):
         return _prim_logistic_prob(modelo, x)
 
     def _builtin_perceptron_fit(self, args):
-        if len(args) != 4:
-            raise Exception("prim_perceptron_fit() requiere X, y, epocas, tasa")
-        X, y, epocas, tasa = args
-        return _prim_perceptron_fit(X, y, int(epocas), float(tasa))
+        if len(args) not in (4, 5):
+            raise Exception("prim_perceptron_fit() requiere X, y, epocas, tasa [, activacion]")
+        X, y, epocas, tasa = args[0], args[1], args[2], args[3]
+        activacion = str(args[4]) if len(args) == 5 else "step"
+        return _prim_perceptron_fit(X, y, int(epocas), float(tasa), activacion)
 
     def _builtin_perceptron_predict(self, args):
         if len(args) != 3:
@@ -2293,7 +2326,9 @@ def _prim_logistic_prob(modelo, x):
 
     return _prim_activar(z, activacion)
 
-def _prim_perceptron_fit(X, y, epocas, tasa):
+# Deep Learning
+# perceptron
+def _prim_perceptron_fit(X, y, epocas, tasa, activacion="step"):
     """
     Entrena un perceptrón con la regla de Rosenblatt.
     X: [[float]] — matriz de entrada (n_muestras × n_features)
@@ -2311,9 +2346,12 @@ def _prim_perceptron_fit(X, y, epocas, tasa):
             # Suma ponderada
             z = sum(w[j] * X[i][j] for j in range(n_feat)) + b
             # Función de paso
-            pred = 1.0 if z >= 0.0 else 0.0
-            # Error
-            err = y[i] - pred
+            if activacion == "step" or activacion is None:
+                pred = 1.0 if z >= 0.0 else 0.0
+            else:
+                pred = _prim_activar(z, activacion)  # usa la misma que el MLP
+            pred_clase = 1.0 if pred >= 0.5 else 0.0
+            err = y[i] - pred_clase
             if err != 0.0:
                 errores += 1
                 # Actualizar pesos
@@ -2384,3 +2422,358 @@ def _prim_mse(y_real, y_pred):
 def _prim_rmse(y_real, y_pred):
     """Raíz del error cuadrático medio"""
     return _prim_mse(y_real, y_pred) ** 0.5
+
+# Perceptron multicapa (MLP)
+
+def _prim_sigmoid_deriv(z):
+    s = _prim_sigmoid(z)
+    return s * (1.0 - s)
+
+def _prim_tanh_deriv(z):
+    t = _prim_tanh(z)
+    return 1.0 - t * t
+
+def _prim_relu_deriv(z):
+    return 1.0 if z > 0.0 else 0.0
+
+def _prim_activar(z, nombre):
+    if nombre == "sigmoid":
+        return _prim_sigmoid(z)
+    if nombre == "tanh":
+        return _prim_tanh(z)
+    if nombre == "relu":
+        return _prim_relu(z)
+    return _prim_sigmoid(z)  # default
+ 
+ 
+def _prim_activar_deriv(z, nombre):
+    if nombre == "sigmoid":
+        return _prim_sigmoid_deriv(z)
+    if nombre == "tanh":
+        return _prim_tanh_deriv(z)
+    if nombre == "relu":
+        return _prim_relu_deriv(z)
+    return _prim_sigmoid_deriv(z)
+
+def _init_pesos(n_entrada, n_salida, activacion, semilla=42):
+    _prim_lcg_seed(semilla)
+    escala = (2.0 / n_entrada) ** 0.5 if activacion == "relu" else (1.0 / n_entrada) ** 0.5
+    pesos = []
+    for _ in range(n_salida):
+        fila = []
+        for _ in range(n_entrada):
+            u1 = max(_prim_lcg_next(), 1e-10)
+            u2 = _prim_lcg_next()
+            # Box-Muller: necesita ln y cos
+            ln_u1 = _prim_log(u1)  # ya existe
+            # cos inline porque mat_cos es RISCO puro, no Python
+            angulo = 2.0 * 3.141592653589793 * u2
+            r2 = angulo * angulo
+            cos_val = 1.0
+            term = 1.0
+            for i in range(1, 15):
+                term *= -r2 / ((2*i - 1) * (2*i))
+                cos_val += term
+                if abs(term) < 1e-15:
+                    break
+            normal = (-2.0 * ln_u1) ** 0.5 * cos_val
+            fila.append(normal * escala)
+        pesos.append(fila)
+    return pesos
+
+def _prim_forward(X_norm, capas_w, capas_b, activaciones):
+    """
+    Propagación hacia adelante.
+ 
+    Returns:
+        zs   : lista de vectores pre-activación por capa [n_capas][n_salida]
+        acts : lista de vectores post-activación por capa, acts[0] = entrada
+    """
+    n = len(X_norm)
+    # acts[0] = entradas normalizadas (batch)
+    acts = [X_norm]  # acts[l] tiene shape [n_muestras][n_neuronas_capa_l]
+    zs = []
+ 
+    for l in range(len(capas_w)):
+        W = capas_w[l]      # [n_salida][n_entrada]
+        b = capas_b[l]      # [n_salida]
+        act_nombre = activaciones[l]
+        entrada = acts[-1]   # [n_muestras][n_entrada]
+ 
+        n_salida = len(W)
+        n_entrada = len(W[0])
+ 
+        z_capa = []
+        a_capa = []
+        for i in range(n):
+            z_row = []
+            a_row = []
+            for j in range(n_salida):
+                z_val = b[j]
+                for k in range(n_entrada):
+                    z_val += W[j][k] * entrada[i][k]
+                z_row.append(z_val)
+                a_row.append(_prim_activar(z_val, act_nombre))
+            z_capa.append(z_row)
+            a_capa.append(a_row)
+ 
+        zs.append(z_capa)
+        acts.append(a_capa)
+ 
+    return zs, acts
+ 
+ 
+def _prim_backward(zs, acts, y, capas_w, capas_b, activaciones, tasa, alpha, n, tipo):
+    """
+    Backpropagation completo.
+ 
+    tipo: "clasificacion" o "regresion"
+    Returns capas_w, capas_b actualizadas.
+    """
+    n_capas = len(capas_w)
+ 
+    # Gradientes acumulados
+    grad_w = [[[0.0] * len(capas_w[l][0]) for _ in range(len(capas_w[l]))]
+               for l in range(n_capas)]
+    grad_b = [[0.0] * len(capas_b[l]) for l in range(n_capas)]
+ 
+    # Delta de la capa de salida
+    # Para clasificación con sigmoid/cross-entropy: delta = pred - y
+    # Para regresión con MSE: delta = pred - y (con activación lineal en salida)
+    ultima_act = acts[-1]  # [n_muestras][n_salida]
+    n_salida = len(ultima_act[0])
+ 
+    deltas_capa = []
+    for i in range(n):
+        delta_row = []
+        for j in range(n_salida):
+            if tipo == "clasificacion":
+                # Cross-entropy + sigmoid → delta simplificado
+                delta = ultima_act[i][j] - float(y[i] if n_salida == 1 else y[i][j])
+            else:
+                # MSE + linear output
+                delta = ultima_act[i][j] - float(y[i] if n_salida == 1 else y[i][j])
+                # Multiplicar por derivada de la activación de salida
+                delta = delta * _prim_activar_deriv(zs[-1][i][j], activaciones[-1])
+            delta_row.append(delta)
+        deltas_capa.append(delta_row)
+ 
+    # Acumular gradientes capa de salida
+    n_entrada_ultima = len(acts[-2][0])
+    for i in range(n):
+        for j in range(n_salida):
+            grad_b[n_capas - 1][j] += deltas_capa[i][j]
+            for k in range(n_entrada_ultima):
+                grad_w[n_capas - 1][j][k] += deltas_capa[i][j] * acts[-2][i][k]
+ 
+    # Propagar hacia atrás por capas ocultas
+    delta_siguiente = deltas_capa
+    for l in range(n_capas - 2, -1, -1):
+        W_sig = capas_w[l + 1]       # [n_sig][n_actual]
+        n_actual = len(capas_w[l])
+        n_sig = len(W_sig)
+ 
+        delta_actual = []
+        for i in range(n):
+            d_row = []
+            for j in range(n_actual):
+                # Suma ponderada de deltas de capa siguiente
+                suma = 0.0
+                for k in range(n_sig):
+                    suma += W_sig[k][j] * delta_siguiente[i][k]
+                # Multiplicar por derivada de activación
+                d = suma * _prim_activar_deriv(zs[l][i][j], activaciones[l])
+                d_row.append(d)
+            delta_actual.append(d_row)
+ 
+        # Acumular gradientes
+        n_ent = len(acts[l][0])
+        for i in range(n):
+            for j in range(n_actual):
+                grad_b[l][j] += delta_actual[i][j]
+                for k in range(n_ent):
+                    grad_w[l][j][k] += delta_actual[i][j] * acts[l][i][k]
+ 
+        delta_siguiente = delta_actual
+ 
+    # Actualizar pesos con L2
+    nuevos_w = []
+    nuevos_b = []
+    for l in range(n_capas):
+        n_s = len(capas_w[l])
+        n_e = len(capas_w[l][0])
+        w_new = []
+        for j in range(n_s):
+            fila = []
+            for k in range(n_e):
+                g = grad_w[l][j][k] / n + alpha * capas_w[l][j][k]
+                fila.append(capas_w[l][j][k] - tasa * g)
+            w_new.append(fila)
+        nuevos_w.append(w_new)
+ 
+        b_new = []
+        for j in range(len(capas_b[l])):
+            g = grad_b[l][j] / n
+            b_new.append(capas_b[l][j] - tasa * g)
+        nuevos_b.append(b_new)
+ 
+    return nuevos_w, nuevos_b
+
+def _calcular_perdida(acts_salida, y, tipo, capas_w, alpha):
+    n = len(acts_salida)
+    n_salida = len(acts_salida[0])
+    eps = 1e-12
+    loss = 0.0
+ 
+    for i in range(n):
+        if tipo == "clasificacion":
+            p = min(max(acts_salida[i][0], eps), 1.0 - eps)
+            yi = float(y[i])
+            # Calcular log manual
+            loss += -(yi * _prim_log(p) + (1 - yi) * _prim_log(1 - p))
+        else:
+            yi = float(y[i])
+            diff = acts_salida[i][0] - yi
+            loss += diff * diff
+ 
+    loss /= n
+ 
+    # Regularización L2
+    reg = 0.0
+    for l in range(len(capas_w)):
+        for fila in capas_w[l]:
+            for v in fila:
+                reg += v * v
+    loss += (alpha / 2.0) * reg
+ 
+    return loss
+
+def _prim_mlp_fit(X, y, capas_neuronas, epocas, tasa, alpha, activacion, tipo):
+    """
+    Entrena un MLP (Perceptrón Multicapa).
+ 
+    Args:
+        X              : [[float]] — n_muestras × n_features
+        y              : [int|float] — etiquetas (0/1 para clasificación)
+        capas_neuronas : [int] — neuronas por capa oculta, ej. [4, 4]
+                         La capa de salida se agrega automáticamente (1 neurona)
+        epocas         : int
+        tasa           : float — learning rate
+        alpha          : float — regularización L2
+        activacion     : str — "sigmoid", "tanh", "relu"
+        tipo           : str — "clasificacion" o "regresion"
+ 
+    Returns:
+        [capas_w, capas_b, historial, col_means, col_stds, activacion, tipo]
+        donde capas_w y capas_b son listas de matrices/vectores RISCO-serializables
+    """
+    n = len(X)
+    n_feat = len(X[0])
+ 
+    # Normalizar X
+    col_means = []
+    col_stds = []
+    for j in range(n_feat):
+        col = [X[i][j] for i in range(n)]
+        cm = sum(col) / n
+        cs = (sum((v - cm) ** 2 for v in col) / n) ** 0.5
+        cs = cs if cs > 1e-8 else 1.0
+        col_means.append(cm)
+        col_stds.append(cs)
+ 
+    X_norm = [[(X[i][j] - col_means[j]) / col_stds[j] for j in range(n_feat)]
+              for i in range(n)]
+ 
+    # Arquitectura: [n_feat] + capas_neuronas + [1]
+    arquitectura = [n_feat] + [int(c) for c in capas_neuronas] + [1]
+    n_capas = len(arquitectura) - 1
+ 
+    # Activaciones: ocultas usan 'activacion', salida usa sigmoid (clasif) o tanh-lineal (regr)
+    activaciones = [activacion] * (n_capas - 1)
+    if tipo == "clasificacion":
+        activaciones.append("sigmoid")
+    else:
+        activaciones.append("tanh")  # salida suave para regresión
+ 
+    # Inicializar pesos
+    capas_w = []
+    capas_b = []
+    for l in range(n_capas):
+        n_ent = arquitectura[l]
+        n_sal = arquitectura[l + 1]
+        W = _init_pesos(n_ent, n_sal, activaciones[l], semilla=42 + l * 7)
+        b = [0.0] * n_sal
+        capas_w.append(W)
+        capas_b.append(b)
+ 
+    historial = []
+ 
+    for epoca in range(epocas):
+        zs, acts = _prim_forward(X_norm, capas_w, capas_b, activaciones)
+        loss = _calcular_perdida(acts[-1], y, tipo, capas_w, alpha)
+        historial.append(loss)
+        capas_w, capas_b = _prim_backward(zs, acts, y, capas_w, capas_b,
+                                      activaciones, tasa, alpha, n, tipo)
+ 
+    return [capas_w, capas_b, historial, col_means, col_stds, activacion, tipo]
+
+def _prim_mlp_predict_raw(modelo, x):
+    """
+    Propagación forward para una sola muestra.
+    Returns: valor crudo de salida (antes de umbral)
+    """
+    capas_w = modelo[0]
+    capas_b = modelo[1]
+    col_means = modelo[3]
+    col_stds = modelo[4]
+    activacion = modelo[5]
+    tipo = modelo[6]
+ 
+    n_feat = len(x)
+    # Normalizar
+    x_norm = [(x[j] - col_means[j]) / col_stds[j] for j in range(n_feat)]
+ 
+    n_capas = len(capas_w)
+    activaciones = [activacion] * (n_capas - 1)
+    if tipo == "clasificacion":
+        activaciones.append("sigmoid")
+    else:
+        activaciones.append("tanh")
+ 
+    actual = x_norm
+    for l in range(n_capas):
+        W = capas_w[l]
+        b = capas_b[l]
+        n_sal = len(W)
+        nueva = []
+        for j in range(n_sal):
+            z = b[j] + sum(W[j][k] * actual[k] for k in range(len(actual)))
+            nueva.append(_prim_activar(z, activaciones[l]))
+        actual = nueva
+ 
+    return actual[0]
+
+def _prim_mlp_predict_prob(modelo, x):
+    """Probabilidad de clase positiva (clasificación)."""
+    return _prim_mlp_predict_raw(modelo, x)
+ 
+ 
+def _prim_mlp_predict_clase(modelo, x, umbral=0.5):
+    """Clase predicha (0 o 1) para clasificación binaria."""
+    prob = _prim_mlp_predict_prob(modelo, x)
+    return 1 if prob >= umbral else 0
+ 
+ 
+def _prim_mlp_predict_batch(modelo, X):
+    """Predicciones para un batch completo. Retorna lista de clases."""
+    tipo = modelo[6]
+    if tipo == "clasificacion":
+        return [float(_prim_mlp_predict_clase(modelo, x)) for x in X]
+    else:
+        return [_prim_mlp_predict_raw(modelo, x) for x in X]
+ 
+ 
+def _prim_mlp_predict_regression(modelo, x):
+    """Valor predicho para regresión."""
+    return _prim_mlp_predict_raw(modelo, x)
+

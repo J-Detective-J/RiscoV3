@@ -1365,3 +1365,322 @@ def test_ml_logistic_config_activacion_sigmoid():
     assert resultado[0] == "6"
     assert resultado[1] == "sigmoid"
     assert float(resultado[2]) > 0.8
+
+# ── MLP Clasificación ─────────────────────────────────────────
+
+def test_mlp_ajustar_retorna_modelo():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4, 4], 500, 0.1, 0.001, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'print(long(modelo))\n'
+    )
+    assert ejecutar(codigo) == ["7"]
+
+
+def test_mlp_historial_longitud_correcta():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4], 100, 0.1, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'print(long(mlp_historial(modelo)))\n'
+    )
+    assert ejecutar(codigo) == ["100"]
+
+
+def test_mlp_historial_disminuye():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4, 4], 500, 0.1, 0.001, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val h = mlp_historial(modelo)\n'
+        'print(h[0])\n'
+        'print(h[long(h)-1])\n'
+    )
+    resultado = ejecutar(codigo)
+    assert float(resultado[1]) < float(resultado[0])
+
+
+def test_mlp_aprende_xor():
+    codigo = (
+            'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+            'val y = [0, 1, 1, 0]\n'
+            'val cfg = mlp_config([4, 4], 1000, 0.1, 0.001, "sigmoid", "clasificacion")\n'
+            'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+            'val pred = mlp_predecir_batch(modelo, X)\n'
+            'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado >= 0.75
+
+
+def test_mlp_prob_entre_0_y_1():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4], 200, 0.1, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val p = mlp_prob(modelo, [1.0, 0.0])\n'
+        'print(p >= 0.0 && p <= 1.0)\n'
+    )
+    assert ejecutar(codigo) == ["True"]
+
+
+def test_mlp_clasificar_devuelve_0_o_1():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4], 200, 0.1, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val c = mlp_clasificar(modelo, [1.0, 0.0])\n'
+        'print(c == 0.0 || c == 1.0)\n'
+    )
+    assert ejecutar(codigo) == ["True"]
+
+
+def test_mlp_batch_longitud_correcta():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4], 100, 0.1, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val pred = mlp_predecir_batch(modelo, X)\n'
+        'print(long(pred))\n'
+    )
+    assert ejecutar(codigo) == ["4"]
+
+
+def test_mlp_xor_con_tanh():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4, 4], 1000, 0.1, 0.001, "tanh", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val pred = mlp_predecir_batch(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado == 1.0
+
+
+def test_mlp_xor_con_relu():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([8, 4], 1000, 0.05, 0.001, "relu", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'val pred = mlp_predecir_batch(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado == 1.0
+
+
+def test_mlp_tres_capas_ocultas():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([4, 4, 4], 800, 0.1, 0.001, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'print(long(mlp_historial(modelo)))\n'
+    )
+    assert ejecutar(codigo) == ["800"]
+
+# ── Perceptrón simple con activación ─────────────────────────
+
+def test_perceptron_sigmoid_aprende_and():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config_activacion(200, 0.1, 0.0, "sigmoid")\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    assert ejecutar(codigo) == ["1.0"]
+
+
+def test_perceptron_tanh_aprende_or():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 1.0, 1.0, 1.0]\n'
+        'val cfg = ai_config_activacion(200, 0.1, 0.0, "tanh")\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    assert resultado >= 0.75  # tanh no garantiza convergencia perfecta en perceptrón simple
+
+
+def test_perceptron_step_default_sigue_funcionando():
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 0.0, 0.0, 1.0]\n'
+        'val cfg = ai_config(200, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    assert ejecutar(codigo) == ["1.0"]
+
+# ── Límites del lenguaje ──────────────────────────────────────
+
+def test_limite_recursion_profunda():
+    # Recursión que supera max_recursion=500, debe fallar con mensaje claro
+    codigo = (
+        'f(n) =>\n'
+        '    if n == 0:\n'
+        '        return 0\n'
+        '    end\n'
+        '    return f(n - 1)\n'
+        'end\n'
+        'print(f(600))\n'
+    )
+    resultado = ejecutar(codigo)
+    assert any("recursión" in r.lower() or "recursion" in r.lower() or "Error" in r for r in resultado)
+
+
+def test_limite_lista_muy_grande():
+    # range(0, 2_000_000) supera max_lista=1_000_000
+    codigo = 'val xs = range(0, 2000000)\nprint(long(xs))\n'
+    resultado = ejecutar(codigo)
+    assert any("Error" in r or "límite" in r.lower() or "limite" in r.lower() for r in resultado)
+
+
+def test_mlp_capa_muy_grande_no_explota():
+    # 200 neuronas en una capa es pesado pero no debería crashear, solo ser lento
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1, 1, 0]\n'
+        'val cfg = mlp_config([200], 10, 0.01, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'print(long(mlp_historial(modelo)))\n'
+    )
+    assert ejecutar(codigo) == ["10"]
+
+
+def test_division_por_cero_en_funcion():
+    codigo = (
+        'f(x) => 1 / x\n'
+        'print(f(0))\n'
+    )
+    resultado = ejecutar(codigo)
+    assert any("cero" in r.lower() or "Error" in r for r in resultado)
+
+
+def test_indice_fuera_de_rango():
+    codigo = 'val xs = [1, 2, 3]\nprint(xs[10])\n'
+    resultado = ejecutar(codigo)
+    assert any("rango" in r.lower() or "Error" in r for r in resultado)
+
+
+def test_indice_negativo_valido():
+    # Índice negativo SÍ debe funcionar
+    codigo = 'val xs = [1, 2, 3]\nprint(xs[-1])\n'
+    assert ejecutar(codigo) == ["3"]
+
+
+def test_for_sobre_no_iterable():
+    codigo = 'for x in 42:\n    print(x)\nend\n'
+    resultado = ejecutar(codigo)
+    assert any("iterable" in r.lower() or "Error" in r for r in resultado)
+
+
+def test_matriz_cuadrada_muy_grande():
+    # 1001x1001 = ~1,002,001 celdas, supera max_celdas_matriz=1,000,000
+    codigo = (
+        'val A = mat_ones(1001, 1001)\n'
+        'val B = mat_ones(1001, 1001)\n'
+        'val A_B = mat_mul(A, B)\n'
+        'print(long(A_B))\n'
+    )
+    resultado = ejecutar(codigo)
+    assert any("límite" in r.lower() or "limite" in r.lower() or "Error" in r for r in resultado)
+
+
+def test_mlp_sin_capas_ocultas_falla_claro():
+    # Lista vacía como capas — arquitectura degenerada
+    codigo = (
+        'val X = [[0.0,0.0],[1.0,1.0]]\n'
+        'val y = [0, 1]\n'
+        'val cfg = mlp_config([], 100, 0.1, 0.0, "sigmoid", "clasificacion")\n'
+        'val modelo = unwrap(mlp_ajustar(X, y, cfg), null)\n'
+        'print(modelo)\n'
+    )
+    # Puede funcionar (conexión directa entrada→salida) o fallar, lo importante es que no crashea silenciosamente
+    resultado = ejecutar(codigo)
+    assert len(resultado) > 0
+
+
+def test_knn_k_mayor_que_muestras():
+    # k=10 con solo 4 muestras — comportamiento en el límite
+    codigo = (
+        'val X = [[1.0],[2.0],[3.0],[4.0]]\n'
+        'val y = [0, 0, 1, 1]\n'
+        'val modelo = ml_knn_ajustar(X, y, 10, "clasificacion", "euclidiana")\n'
+        'print(ml_knn_predecir(modelo, [2.5]))\n'
+    )
+    resultado = ejecutar(codigo)
+    # Con k>n usa todos los vecinos disponibles, debe devolver algo
+    assert len(resultado) > 0
+
+
+def test_perceptron_xor_no_converge():
+    # XOR no es linealmente separable, el perceptrón simple NO debe aprender esto
+    codigo = (
+        'val X = [[0.0,0.0],[0.0,1.0],[1.0,0.0],[1.0,1.0]]\n'
+        'val y = [0.0, 1.0, 1.0, 0.0]\n'
+        'val cfg = ai_config(1000, 0.1, 0.0)\n'
+        'val modelo = perceptron_ajustar(X, y, cfg)\n'
+        'val pred = perceptron_predecir(modelo, X)\n'
+        'print(metricas_accuracy(y, pred))\n'
+    )
+    resultado = float(ejecutar(codigo)[0])
+    # Accuracy < 1.0 demuestra que el perceptrón simple tiene límites
+    assert resultado < 1.0
+
+
+def test_string_largo_no_crashea():
+    # Concatenación masiva de strings
+    codigo = (
+        'var s = ""\n'
+        'var i = 0\n'
+        'while i < 1000:\n'
+        '    s = s + "a"\n'
+        '    i = i + 1\n'
+        'end\n'
+        'print(long(s))\n'
+    )
+    assert ejecutar(codigo) == ["1000"]
+
+
+def test_lista_de_listas_profunda():
+    # Indexación encadenada profunda
+    codigo = (
+        'val m = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]\n'
+        'print(m[1][0][1])\n'
+    )
+    assert ejecutar(codigo) == ["6"]
+
+
+def test_funcion_como_argumento():
+    # Funciones de orden superior — pasando función nombrada como arg
+    codigo = (
+        'doble(x) => x * 2\n'
+        'val resultado = map([1, 2, 3], doble)\n'
+        'print(resultado)\n'
+    )
+    assert ejecutar(codigo) == ["[2, 4, 6]"]
+
+
+def test_closure_captura_variable_externa():
+    codigo = (
+        'val factor = 5\n'
+        'val resultado = map([1, 2, 3], (x) => x * factor)\n'
+        'print(resultado)\n'
+    )
+    assert ejecutar(codigo) == ["[5, 10, 15]"]
