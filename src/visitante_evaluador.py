@@ -1131,7 +1131,12 @@ class VisitanteEvaluador(RISCOVisitor):
             'prim_mlp_predict_clase':    self._builtin_mlp_predict_clase,
             'prim_mlp_predict_batch':    self._builtin_mlp_predict_batch,
             'prim_mlp_predict_regression': self._builtin_mlp_predict_regression,
-             # ── Primitivas internas de file.rc ────────────────
+            'prim_kmeans_fit':      self._builtin_kmeans_fit,
+            'prim_kmeans_predecir': self._builtin_kmeans_predecir,
+            'prim_autoencoder_fit':         self._builtin_autoencoder_fit,
+            'prim_autoencoder_encode':      self._builtin_autoencoder_encode,
+            'prim_autoencoder_reconstruir': self._builtin_autoencoder_reconstruir,
+            # ── Primitivas internas de file.rc ────────────────
             'prim_file_open':     self._builtin_file_open,
             'prim_file_close':    self._builtin_file_close,
             'prim_file_read':     self._builtin_file_read,
@@ -1488,6 +1493,16 @@ class VisitanteEvaluador(RISCOVisitor):
         
         raise Exception("Tipo KNN no soportado")
 
+    def _builtin_kmeans_fit(self, args):
+        if len(args) != 3:
+            raise Exception("prim_kmeans_fit() requiere X, k, iteraciones")
+        X, k, iteraciones = args
+        return _prim_kmeans_fit(X, int(k), int(iteraciones))
+
+    def _builtin_kmeans_predecir(self, args):
+        if len(args) != 2:
+            raise Exception("prim_kmeans_predecir() requiere modelo, x")
+        return _prim_kmeans_predecir(args[0], args[1])
 
     # ── Primitivas mat ────────────────────────────────────────
     def _builtin_ml_ajustar_lineal(self, args):
@@ -1544,6 +1559,24 @@ class VisitanteEvaluador(RISCOVisitor):
         if len(args) != 2:
             raise Exception("prim_mlp_predict_regression() requiere modelo, x")
         return _prim_mlp_predict_regression(args[0], args[1])
+
+    def _builtin_autoencoder_fit(self, args):
+        if len(args) != 7:
+            raise Exception("prim_autoencoder_fit() requiere X, capas_encoder, dim_latente, epocas, tasa, alpha, activacion")
+        X, capas_encoder, dim_latente, epocas, tasa, alpha, activacion = args
+        resultado = _prim_autoencoder_fit(X, capas_encoder, int(dim_latente),
+                                        int(epocas), float(tasa), float(alpha), str(activacion))
+        return ("ok", resultado)
+
+    def _builtin_autoencoder_encode(self, args):
+        if len(args) != 2:
+            raise Exception("prim_autoencoder_encode() requiere modelo, x")
+        return _prim_autoencoder_encode(args[0], args[1])
+
+    def _builtin_autoencoder_reconstruir(self, args):
+        if len(args) != 2:
+            raise Exception("prim_autoencoder_reconstruir() requiere modelo, x")
+        return _prim_autoencoder_reconstruir(args[0], args[1])
     
     def _builtin_mat_sqrt(self, args):
         """
@@ -2631,6 +2664,10 @@ def _calcular_perdida(acts_salida, y, tipo, capas_w, alpha):
             yi = float(y[i])
             # Calcular log manual
             loss += -(yi * _prim_log(p) + (1 - yi) * _prim_log(1 - p))
+        elif tipo == "autoencoder":
+            for j in range(n_salida):
+                diff = acts_salida[i][j] - float(y[i][j])
+                loss += diff * diff
         else:
             yi = float(y[i])
             diff = acts_salida[i][0] - yi
@@ -2777,3 +2814,221 @@ def _prim_mlp_predict_regression(modelo, x):
     """Valor predicho para regresión."""
     return _prim_mlp_predict_raw(modelo, x)
 
+# K means para agrupamiento
+
+def _prim_kmeans_fit(X, k, iteraciones):
+    n = len(X)
+    n_feat = len(X[0])
+    centroides = [list(X[i]) for i in range(k)]
+    asignaciones = [0] * n
+    for _ in range(iteraciones):
+        for i in range(n):
+            min_dist = None
+            mejor = 0
+            for c in range(k):
+                dist = sum((X[i][j] - centroides[c][j])**2 for j in range(n_feat))
+                if min_dist is None or dist < min_dist:
+                    min_dist = dist
+                    mejor = c
+            asignaciones[i] = mejor
+        nuevos = [[0.0]*n_feat for _ in range(k)]
+        conteos = [0]*k
+        for i in range(n):
+            c = asignaciones[i]
+            conteos[c] += 1
+            for j in range(n_feat):
+                nuevos[c][j] += X[i][j]
+        for c in range(k):
+            if conteos[c] > 0:
+                nuevos[c] = [nuevos[c][j]/conteos[c] for j in range(n_feat)]
+            else:
+                nuevos[c] = centroides[c]
+        centroides = nuevos
+    return [centroides, asignaciones, k]
+
+def _prim_kmeans_predecir(modelo, x):
+    centroides = modelo[0]
+    k = modelo[2]
+    n_feat = len(x)
+    min_dist = None
+    mejor = 0
+    for c in range(k):
+        dist = sum((x[j] - centroides[c][j])**2 for j in range(n_feat))
+        if min_dist is None or dist < min_dist:
+            min_dist = dist
+            mejor = c
+    return mejor
+
+# Autoencoder para agrupamiento deep learning
+
+def _prim_autoencoder_fit(X, capas_encoder, dim_latente, epocas, tasa, alpha, activacion):
+    n = len(X)
+    n_feat = len(X[0])
+
+    # Arquitectura espejo: encoder + decoder
+    # encoder: n_feat → capas_encoder → dim_latente
+    # decoder: dim_latente → reversed(capas_encoder) → n_feat
+    capas_decoder = list(reversed(capas_encoder))
+    arquitectura_completa = [n_feat] + capas_encoder + [dim_latente] + capas_decoder + [n_feat]
+    indice_latente = len(capas_encoder) + 1  # índice de la capa latente en acts
+
+    n_capas = len(arquitectura_completa) - 1
+    activaciones = [activacion] * (n_capas - 1) + ["tanh"]  # salida tanh para reconstrucción
+
+    # Normalizar X
+    col_means = []
+    col_stds = []
+    for j in range(n_feat):
+        col = [X[i][j] for i in range(n)]
+        cm = sum(col) / n
+        cs = (sum((v - cm)**2 for v in col) / n) ** 0.5
+        cs = cs if cs > 1e-8 else 1.0
+        col_means.append(cm)
+        col_stds.append(cs)
+
+    X_norm = [[(X[i][j] - col_means[j]) / col_stds[j] for j in range(n_feat)] for i in range(n)]
+
+    # Inicializar pesos
+    capas_w = []
+    capas_b = []
+    for l in range(n_capas):
+        n_ent = arquitectura_completa[l]
+        n_sal = arquitectura_completa[l + 1]
+        W = _init_pesos(n_ent, n_sal, activaciones[l], semilla=42 + l * 13)
+        b = [0.0] * n_sal
+        capas_w.append(W)
+        capas_b.append(b)
+
+    historial = []
+
+    for _ in range(epocas):
+        zs, acts = _prim_forward(X_norm, capas_w, capas_b, activaciones)
+        # y objetivo = X_norm (reconstrucción)
+        loss = _calcular_perdida(acts[-1], 
+                                  [X_norm[i] for i in range(n)],  
+                                  "autoencoder", capas_w, alpha)
+        historial.append(loss)
+        capas_w, capas_b = _prim_backward_autoencoder(zs, acts, X_norm, capas_w, capas_b,
+                                                   activaciones, tasa, alpha, n)
+
+    return [capas_w, capas_b, historial, col_means, col_stds, activacion, indice_latente, n_feat]
+
+
+def _prim_backward_autoencoder(zs, acts, X_norm, capas_w, capas_b, activaciones, tasa, alpha, n):
+    """Backprop para autoencoder: delta salida = pred - x_original (MSE)."""
+    n_capas = len(capas_w)
+    grad_w = [[[0.0]*len(capas_w[l][0]) for _ in range(len(capas_w[l]))] for l in range(n_capas)]
+    grad_b = [[0.0]*len(capas_b[l]) for l in range(n_capas)]
+
+    ultima_act = acts[-1]
+    n_salida = len(ultima_act[0])
+
+    # Delta capa salida: MSE con derivada de activación
+    deltas_capa = []
+    for i in range(n):
+        delta_row = []
+        for j in range(n_salida):
+            delta = (ultima_act[i][j] - X_norm[i][j]) * _prim_activar_deriv(zs[-1][i][j], activaciones[-1])
+            delta_row.append(delta)
+        deltas_capa.append(delta_row)
+
+    # Acumular gradientes capa salida
+    n_entrada_ultima = len(acts[-2][0])
+    for i in range(n):
+        for j in range(n_salida):
+            grad_b[n_capas-1][j] += deltas_capa[i][j]
+            for k in range(n_entrada_ultima):
+                grad_w[n_capas-1][j][k] += deltas_capa[i][j] * acts[-2][i][k]
+
+    # Propagar hacia atrás
+    delta_siguiente = deltas_capa
+    for l in range(n_capas - 2, -1, -1):
+        W_sig = capas_w[l+1]
+        n_actual = len(capas_w[l])
+        n_sig = len(W_sig)
+        delta_actual = []
+        for i in range(n):
+            d_row = []
+            for j in range(n_actual):
+                suma = sum(W_sig[k][j] * delta_siguiente[i][k] for k in range(n_sig))
+                d_row.append(suma * _prim_activar_deriv(zs[l][i][j], activaciones[l]))
+            delta_actual.append(d_row)
+        n_ent = len(acts[l][0])
+        for i in range(n):
+            for j in range(n_actual):
+                grad_b[l][j] += delta_actual[i][j]
+                for k in range(n_ent):
+                    grad_w[l][j][k] += delta_actual[i][j] * acts[l][i][k]
+        delta_siguiente = delta_actual
+
+    # Actualizar pesos
+    nuevos_w = []
+    nuevos_b = []
+    for l in range(n_capas):
+        w_new = []
+        for j in range(len(capas_w[l])):
+            fila = [capas_w[l][j][k] - tasa * (grad_w[l][j][k]/n + alpha * capas_w[l][j][k])
+                    for k in range(len(capas_w[l][0]))]
+            w_new.append(fila)
+        nuevos_w.append(w_new)
+        b_new = [capas_b[l][j] - tasa * (grad_b[l][j]/n) for j in range(len(capas_b[l]))]
+        nuevos_b.append(b_new)
+
+    return nuevos_w, nuevos_b
+
+
+def _prim_autoencoder_encode(modelo, x):
+    """Extrae la representación del cuello de botella para una muestra."""
+    capas_w = modelo[0]
+    capas_b = modelo[1]
+    col_means = modelo[3]
+    col_stds = modelo[4]
+    activacion = modelo[5]
+    indice_latente = modelo[6]
+
+    n_feat = len(x)
+    x_norm = [(x[j] - col_means[j]) / col_stds[j] for j in range(n_feat)]
+
+    n_capas = len(capas_w)
+    activaciones = [activacion] * (n_capas - 1) + ["tanh"]
+
+    actual = x_norm
+    # Solo propagar hasta la capa latente
+    for l in range(indice_latente):
+        W = capas_w[l]
+        b = capas_b[l]
+        nueva = []
+        for j in range(len(W)):
+            z = b[j] + sum(W[j][k] * actual[k] for k in range(len(actual)))
+            nueva.append(_prim_activar(z, activaciones[l]))
+        actual = nueva
+
+    return actual  # representación latente
+
+
+def _prim_autoencoder_reconstruir(modelo, x):
+    """Reconstruye la entrada pasándola por el autoencoder completo."""
+    capas_w = modelo[0]
+    capas_b = modelo[1]
+    col_means = modelo[3]
+    col_stds = modelo[4]
+    activacion = modelo[5]
+
+    n_feat = len(x)
+    x_norm = [(x[j] - col_means[j]) / col_stds[j] for j in range(n_feat)]
+
+    n_capas = len(capas_w)
+    activaciones = [activacion] * (n_capas - 1) + ["tanh"]
+
+    actual = x_norm
+    for l in range(n_capas):
+        W = capas_w[l]
+        b = capas_b[l]
+        nueva = []
+        for j in range(len(W)):
+            z = b[j] + sum(W[j][k] * actual[k] for k in range(len(actual)))
+            nueva.append(_prim_activar(z, activaciones[l]))
+        actual = nueva
+
+    # Desnormalizar salida
+    return [actual[j] * col_stds[j] + col_means[j] for j in range(n_feat)]

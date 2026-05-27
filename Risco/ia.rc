@@ -91,6 +91,42 @@ mlp_predecir(modelo, x) => prim_mlp_predict_regression(modelo, x)
 /// mlp.historial(modelo) → [Decimal]
 mlp_historial(modelo) => modelo[2]
 
+// ── Autoencoder (Agrupamiento con redes neuronales) ──
+
+/// autoencoder.config(capas_encoder, dim_latente, epocas, tasa, alpha, activacion)
+/// capas_encoder: neuronas de cada capa del encoder, ej. [8, 4]
+/// dim_latente: dimensión del cuello de botella, ej. 2
+/// El decoder se construye automáticamente como espejo del encoder
+autoencoder_config(capas_encoder, dim_latente, epocas, tasa, alpha, activacion) =>
+    return [capas_encoder, dim_latente, epocas, tasa, alpha, activacion]
+end
+
+/// Entrena el autoencoder. No necesita etiquetas y.
+autoencoder_ajustar(X, cfg) =>
+    return prim_autoencoder_fit(X, cfg[0], cfg[1], cfg[2], cfg[3], cfg[4], cfg[5])
+end
+
+/// Extrae la representación comprimida (cuello de botella)
+autoencoder_encode(modelo, x) => prim_autoencoder_encode(modelo, x)
+
+autoencoder_encode_batch(modelo, X) =>
+    return map(X, (x) => autoencoder_encode(modelo, x))
+end
+
+/// Reconstruye la entrada original
+autoencoder_reconstruir(modelo, x) => prim_autoencoder_reconstruir(modelo, x)
+
+autoencoder_historial(modelo) => modelo[2]
+
+/// Flujo completo: autoencoder + kmeans para agrupamiento
+autoencoder_agrupar(X, cfg_ae, cfg_km) =>
+    val modelo_ae = unwrap(autoencoder_ajustar(X, cfg_ae), null)
+    val representaciones = autoencoder_encode_batch(modelo_ae, X)
+    val modelo_km = kmeans_ajustar(representaciones, cfg_km)
+    val grupos = kmeans_predecir_batch(modelo_km, representaciones)
+    return [modelo_ae, modelo_km, grupos]
+end
+
 // ── Métricas ──────────────────────────────────────────────────
 
 /// metricas.accuracy(y_real, y_pred) → Decimal
@@ -108,3 +144,20 @@ metricas_f1(y_real, y_pred) => prim_f1(y_real, y_pred)
 metricas_mae(y_real, y_pred) => prim_mae(y_real, y_pred)
 metricas_mse(y_real, y_pred) => prim_mse(y_real, y_pred)
 metricas_rmse(y_real, y_pred) => prim_rmse(y_real, y_pred)
+
+// ── K-Means ─────────────────────────────────────────
+
+kmeans_config(k, iteraciones) => [k, iteraciones]
+
+kmeans_ajustar(X, cfg) =>
+    return prim_kmeans_fit(X, cfg[0], cfg[1])
+end
+
+kmeans_predecir(modelo, x) => prim_kmeans_predecir(modelo, x)
+
+kmeans_predecir_batch(modelo, X) =>
+    return map(X, (x) => kmeans_predecir(modelo, x))
+end
+
+kmeans_centroides(modelo) => modelo[0]
+kmeans_asignaciones(modelo) => modelo[1]

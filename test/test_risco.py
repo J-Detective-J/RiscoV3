@@ -1684,3 +1684,73 @@ def test_closure_captura_variable_externa():
         'print(resultado)\n'
     )
     assert ejecutar(codigo) == ["[5, 10, 15]"]
+
+# ── Autoencoder ───────────────────────────────────────────────
+
+def test_autoencoder_retorna_modelo():
+    codigo = (
+        'val X = [[1.0,0.0],[0.0,1.0],[1.0,1.0],[0.0,0.0]]\n'
+        'val cfg = autoencoder_config([4], 2, 200, 0.05, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(autoencoder_ajustar(X, cfg), null)\n'
+        'print(long(modelo))\n'
+    )
+    assert ejecutar(codigo) == ["8"]
+
+
+def test_autoencoder_historial_disminuye():
+    codigo = (
+        'val X = [[1.0,0.0],[0.0,1.0],[1.0,1.0],[0.0,0.0]]\n'
+        'val cfg = autoencoder_config([4], 2, 300, 0.05, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(autoencoder_ajustar(X, cfg), null)\n'
+        'val h = autoencoder_historial(modelo)\n'
+        'print(h[long(h)-1] < h[0])\n'
+    )
+    assert ejecutar(codigo) == ["True"]
+
+
+def test_autoencoder_encode_dimension_latente():
+    codigo = (
+        'val X = [[1.0,0.0,1.0],[0.0,1.0,0.0],[1.0,1.0,0.0],[0.0,0.0,1.0]]\n'
+        'val cfg = autoencoder_config([4], 2, 100, 0.05, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(autoencoder_ajustar(X, cfg), null)\n'
+        'val rep = autoencoder_encode(modelo, [1.0, 0.0, 1.0])\n'
+        'print(long(rep))\n'
+    )
+    assert ejecutar(codigo) == ["2"]
+
+
+def test_autoencoder_reconstruir_misma_dimension():
+    codigo = (
+        'val X = [[1.0,0.0],[0.0,1.0],[1.0,1.0],[0.0,0.0]]\n'
+        'val cfg = autoencoder_config([4], 2, 100, 0.05, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(autoencoder_ajustar(X, cfg), null)\n'
+        'val rec = autoencoder_reconstruir(modelo, [1.0, 0.0])\n'
+        'print(long(rec))\n'
+    )
+    assert ejecutar(codigo) == ["2"]
+
+
+def test_autoencoder_agrupar_separa_grupos():
+    codigo = (
+        'val X = [[1.0,0.0],[1.1,0.1],[0.0,1.0],[0.1,0.9]]\n'
+        'val cfg_ae = autoencoder_config([4], 2, 500, 0.05, 0.0, "sigmoid")\n'
+        'val cfg_km = kmeans_config(2, 100)\n'
+        'val resultado = autoencoder_agrupar(X, cfg_ae, cfg_km)\n'
+        'val grupos = resultado[2]\n'
+        'print(grupos[0] == grupos[1])\n'  
+        'print(grupos[0] == grupos[2])\n'  
+    )
+    resultado = ejecutar(codigo)
+    assert resultado[0] == "True"
+    assert resultado[1] == "False"
+
+
+def test_autoencoder_encode_batch_longitud():
+    codigo = (
+        'val X = [[1.0,0.0],[0.0,1.0],[1.0,1.0],[0.0,0.0]]\n'
+        'val cfg = autoencoder_config([4], 2, 100, 0.05, 0.0, "sigmoid")\n'
+        'val modelo = unwrap(autoencoder_ajustar(X, cfg), null)\n'
+        'val reps = autoencoder_encode_batch(modelo, X)\n'
+        'print(long(reps))\n'
+    )
+    assert ejecutar(codigo) == ["4"]
