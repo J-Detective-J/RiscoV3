@@ -19,22 +19,39 @@ class GestorMemoria:
     def __init__(
         self,
         max_recursion=500,
+        max_function_calls=400000,
         max_variables=10000,
         max_lista=1_000_000,
         max_celdas_matriz=1_000_000,
     ):
         self.max_recursion = max_recursion
+        self.max_function_calls = max_function_calls
         self.max_variables = max_variables
         self.max_lista = max_lista
         self.max_celdas_matriz = max_celdas_matriz
+
         self.profundidad_recursion = 0
+        self.llamadas_funcion = 0
+
+    def iniciar_ejecucion(self):
+        self.profundidad_recursion = 0
+        self.llamadas_funcion = 0
 
     def entrar_funcion(self):
+        self.llamadas_funcion += 1
+
+        if self.llamadas_funcion > self.max_function_calls:
+            raise Exception(
+                f"Límite de llamadas de función alcanzado ({self.max_function_calls}). "
+                "Posible recursión exponencial o función demasiado costosa."
+            )
+
         if self.profundidad_recursion >= self.max_recursion:
             raise Exception(
                 f"Límite de recursión alcanzado ({self.max_recursion}). "
                 "Use una versión iterativa o reduzca la profundidad."
             )
+
         self.profundidad_recursion += 1
 
     def salir_funcion(self):

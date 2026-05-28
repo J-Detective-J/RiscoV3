@@ -434,6 +434,7 @@ class VisitanteEvaluador(RISCOVisitor):
         Returns:
             El último resultado evaluado (útil en modo interactivo).
         """
+        self.gestor_memoria.iniciar_ejecucion()
         for sentencia in ctx.sentencia():
             try:
                 resultado = self.visit(sentencia)
